@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tigre Couch</title>
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="pr-8 pl-8 bg-gray-100 py-4">
+        <!-- Top bar: FAQ and Nosotros -->
+        <div class="flex justify-end items-center space-x-4 mb-2">
+            <a href="#" class="text-black">FAQ</a>
+            <span class="text-black">|</span>
+            <a href="#" class="text-black">Nosotros</a>
+        </div>
+
+        <!-- Bottom bar: Logo, Search bar, and Profile icon -->
+        <div class="flex items-center pt-2 px-8">
+            <!-- Logo -->
+            <a href="/" class="bg-black text-white rounded-full h-16 w-16 flex items-center justify-center">
+                FIME
+            </a>
+
+            <!-- Search bar -->
+            <div class="flex-grow mx-4">
+                <div class="relative">
+                  <!-- Campo de búsqueda -->
+                  <input id="busqueda" type="text" placeholder="Buscar" class="w-full bg-black text-white rounded-full pl-10 py-2">
+                  
+                  <!-- Ícono de búsqueda -->
+                  <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg class="text-white h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 18l6-6m0 0l-6-6m6 6H3"></path>
+                    </svg>
+                  </div>
+                  
+                  <!-- Resultados de búsqueda -->
+                  <ul id="resultados" class="absolute w-full bg-black text-white mt-2 rounded-lg"></ul>
+                </div>
+              </div>
+
+            <!-- Profile icon -->
+            <a id="login-link" class="bg-gray-300 rounded-full h-16 w-16 flex items-center justify-center">
+                <svg class="h-8 w-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c2.66 0 8 1.34 8 4v2H4v-2c0-2.66 5.34-4 8-4zm0-4a4 4 0 100-8 4 4 0 000 8z" />
+                </svg>
+            </a>
+        </div>
+    </nav>
+
+    <main class="px-16"> 
+      <div class=" ">
+          <h1 class="text-4xl font-bold mb-2">Profesor <%= profesor.nombre %> <%= profesor.apellido %> </h1>
+      
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold">Materias</h2>
+              <ul class="list-disc ml-5"> <!-- Añadir clases de Tailwind CSS para las bolitas y margen -->
+                  <% materias.forEach(function(materia) { %>
+                    <li><%= materia %></li>
+                  <% }); %>
+                </ul>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center">
+                <button> <span class="mr-1 text-lg">👍</span> </button>
+                <span id="likes" class="text-lg font-bold">6</span>
+              </div>
+              <div class="flex items-center">
+                <button> <span class="mr-1 text-lg">👎</span> </button>
+                <span id="dislikes" class="text-lg font-bold">9</span>
+              </div>
+            </div>
+          </div>
+      
+          <!-- Agregar comentario -->
+          <div class="mt-4 p-6 mb-12 text-white bg-black border border-gray-300 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold mb-2 text-white">Agregar comentario</h3>
+            <form id="comentario-form" class="flex space-x-4">
+              <!-- Dropdown Materia -->
+              <div class="relative w-1/4">
+                <select id="materia-dropdown" class="w-full bg-white text-black p-2 rounded">
+                  <% materias.forEach(materia => { %>
+                    <option value="<%= materia %>"><%= materia %></option>
+                  <% }); %>
+                </select>
+              </div>
+      
+              <!-- Input de Comentario -->
+              <input id="comentario-input" type="text" class="w-1/2 bg-white text-black p-2 rounded" placeholder="Comentario" />
+      
+              <!-- Botón enviar -->
+              <button type="submit" class="bg-black text-white px-4 py-2 rounded">Listo</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="pt-10">
+          <% comentarios.forEach(comentario => { %>
+              <div class="p-6 mb-12 text-white bg-black border border-gray-300 rounded-lg shadow-md">
+                  <p><strong>Usuario:</strong> <%= comentario.usuario %></p>
+                  <p><strong>Materia:</strong> <%= comentario.materia %></p>
+                  <p><strong>Contenido:</strong> <%= comentario.contenido %></p>
+                  <p><strong>Likes:</strong> <%= comentario.likes %></p>
+                  <p><strong>Dislikes:</strong> <%= comentario.dislikes %></p>
+              </div>
+          <% }) %>
+      </div>
+  </main>
+
+    <!-- Incluir el archivo de script externo -->
+    <script src="/js/script_profesores.js"></script>
+
+    <script>
+        // Obtén el id del objeto usuario desde la plantilla EJS
+        let id = usuario.id;  // Esto inyectará el valor del id en el script
+
+        // Selecciona el enlace
+        const loginLink = document.getElementById('login-link');
+
+        // Configura el href basado en el id
+        if (id === 0) {
+            loginLink.href = '/login'; // Endpoint para id = 0
+        } else if (id > 0) {
+            loginLink.href = '/user_screen'; // Endpoint para id > 0
+        }
+    </script>
+
+<!-- Renderiza el ID del profesor en un elemento HTML -->
+<input type="hidden" id="profesor-id" value="<%= profesor.id %>">
+<input type="hidden" id="usuario-id" value="<%= usuario_id %>">
+
+</body>
+</html>
