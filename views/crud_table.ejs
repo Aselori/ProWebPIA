@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD - <%= tableName %></title>
+    <link href="/css/styles.css" rel="stylesheet"> 
+</head>
+<body class="bg-gray-100 flex">
+    <aside class="bg-black text-white w-64 h-screen px-4 py-6">
+        <div class="text-3xl font-bold mb-8">FIME</div>
+        <nav class="space-y-4">
+            <% ['users', 'professors', 'subjects', 'comments', 'reports', 'report_reasons', 'roles', 'professor_likes', 'comment_likes', 'professor_subjects'].forEach(table => { %>
+                <a href="/dashboard/<%= table %>" class="block py-2 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
+            <% }) %>
+        </nav>
+    </aside>
+    
+
+    <main class="flex-grow p-8">
+        <h1 class="text-2xl font-bold mb-4">Tabla: <%= tableName %></h1>
+        <table class="min-w-full bg-white border border-gray-300">
+            <thead>
+                <tr>
+                    <% if (data.length > 0) { %>
+                        <% Object.keys(data[0]).forEach(key => { %>
+                            <th class="py-2 px-4 border-b"><%= key %></th>
+                        <% }) %>
+                        <th class="py-2 px-4 border-b">Acciones</th>
+                    <% } else { %>
+                        <th class="py-2 px-4 border-b">No hay datos disponibles</th>
+                    <% } %>
+                </tr>
+            </thead>
+            <tbody>
+                <% data.forEach(row => { %>
+                    <tr>
+                        <% Object.values(row).forEach(value => { %>
+                            <td class="py-2 px-4 border-b"><%= value %></td>
+                        <% }) %>
+                        <td class="py-2 px-4 border-b">
+                            <a href="#" class="text-blue-500">Editar</a>
+                            <a href="#" class="text-red-500 ml-2">Eliminar</a>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        <button class="mt-4 bg-green-500 text-white px-4 py-2 rounded">Agregar Nuevo</button>
+    </main>
+</body>
+</html>

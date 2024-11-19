@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Maestro</title>
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+
+<body>
+    <%- include('partials/header') %> 
+    
+    <div class="bg-white flex justify-center items-center h-screen">
+
+    <div class="bg-white p-8 rounded-lg shadow-lg w-80">
+        <h2 class="text-2xl font-bold text-center mb-6">Agregar Maestro</h2>
+        <form action="/agregar-maestro" method="POST">
+            <div class="mb-4">
+                <label for="nombre" class="block text-gray-700 font-medium mb-2">Nombre</label>
+                <input type="text" id="nombre" name="nombre" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="mb-4">
+                <label for="apellidos" class="block text-gray-700 font-medium mb-2">Apellidos</label>
+                <input type="text" id="apellidos" name="apellidos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <button type="submit" class="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition duration-200">Solicitar</button>
+        </form>
+    </div>
+    </div>
+</body>
+</html>
