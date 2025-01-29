@@ -124,6 +124,50 @@ app.get('/buscar', async (req, res) => {
   }
 });
 
+app.post('/deleteCrud', async (req, res) => {
+  const { id, tabla } = req.body;
+
+  // Listado de tablas permitidas (para evitar SQL Injection)
+  const tablasPermitidas = ['report_status', 'users', 'comments', 'professors'];
+
+  try {
+      // Construir la consulta de forma segura
+      const query = `DELETE FROM ${tabla} WHERE id = $1 RETURNING *;`;
+
+      const result = await pool.query(query, [id]);
+
+      if (result.rowCount > 0) {
+          res.json({ success: true, message: "Registro eliminado correctamente", deleted: result.rows });
+      } else {
+          res.status(404).json({ success: false, message: "No se encontró el ID" });
+      }
+  } catch (error) {
+      console.error("Error al eliminar:", error);
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+});
+
+
+app.post('/updateStatus', async (req, res) => {
+  const { id } = req.body;
+
+  try {
+      const result = await pool.query(
+          'UPDATE report_status SET status_name = $1 WHERE id = $2;',
+          ['Revisado', id]
+      );
+
+      // Verificar si se actualizó algún registro
+      if (result.rowCount > 0) {
+          res.json({ success: true, message: "Estado actualizado correctamente" });
+      } else {
+          res.status(404).json({ success: false, message: "No se encontró el ID" });
+      }
+  } catch (error) {
+      console.error("Error al actualizar el estado:", error);
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+});
 
 // Ruta para la página de login
 app.get('/login', (req, res) => res.render('login'));
