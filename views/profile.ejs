@@ -17,14 +17,17 @@
                 <button class="bg-black text-white px-6 py-4 text-sm rounded-md shadow-sm hover:bg-gray-800 focus:outline-none">
                     Editar perfil
                 </button>
-                <!-- Botón para cerrar sesión -->
                 <a href="/logout" class="ml-4 bg-red-500 text-white px-6 py-4 text-sm rounded-md shadow-sm hover:bg-red-600 focus:outline-none">
                     Cerrar sesión
                 </a>
+                <% if (usuario.role === 1) { %>
+                    <a href="/dashboard" class="ml-4 bg-blue-500 text-white px-6 py-4 text-sm rounded-md shadow-sm hover:bg-blue-600 focus:outline-none">
+                        Ir al Dashboard
+                    </a>
+                <% } %>
             </div>
         </div>
 
-        <!-- Aquí puedes agregar la lógica para mostrar los comentarios del usuario -->
         <div class="pt-10">
             <% if (comentarios && comentarios.length > 0) { %>
                 <% comentarios.forEach(comentario => { %>
@@ -42,10 +45,7 @@
         </div>
     </main>
 
-    
-    
     <script src='/js/scripts.js'></script>
-
 
 </body>
 </html>

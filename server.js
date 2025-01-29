@@ -315,21 +315,26 @@ app.get('/dashboard', async (req, res) => {
 });
 
 app.get('/dashboard/:tableName', async (req, res) => {
-  // Verifica si la tabla es válida antes de ejecutar la consulta
   const { tableName } = req.params;
-  const validTables = ['users', 'professors', 'subjects', 'comments', 'reports', 'report_reasons', 'roles', 'professor_likes', 'comment_likes', 'professor_subjects'];
+  const validTables = [
+    'users', 'professors', 'subjects', 'comments', 
+    'reports', 'report_reasons', 'roles', 
+    'professor_likes', 'comment_likes', 'professor_subjects'
+  ];
+
   if (!validTables.includes(tableName)) {
     return res.status(404).send('Tabla no encontrada');
   }
-  
+
   try {
     const data = await pool.query(`SELECT * FROM ${tableName}`);
-    res.render('dashboard', { tableName, data: data.rows }); // Renderiza la vista
+    res.render('crud_table', { tableName, data: data.rows });
   } catch (error) {
     console.error(`Error al obtener los datos de la tabla ${tableName}:`, error);
     res.status(500).send('Error al obtener los datos');
   }
 });
+
 
 app.post('/dashboard/:tableName/add', async (req, res) => {
   const { tableName } = req.params;
@@ -482,6 +487,16 @@ app.post('/agregar-maestro', async (req, res) => {
   }
 });
 
+app.get('/nosotros', (req, res) => {
+  res.render('nosotros', { usuario: req.session.usuario || null });
+});
+
+// Ruta para la página "FAQ"
+app.get('/faq', (req, res) => {
+  res.render('faq', { usuario: req.session.usuario || null });
+});
+
+
 // Ruta para manejar la publicación de comentarios
 app.post('/post_comentario', async (req, res) => {
   const { profesorId, usuarioId, materia, comentario } = req.body;
@@ -505,6 +520,10 @@ app.post('/post_comentario', async (req, res) => {
     console.error('Error al insertar el comentario:', error);
     res.json({ success: false, message: 'Error al enviar el comentario.' });
   }
+});
+
+app.get('/header', (req, res) => {
+  res.render('header', { usuario: req.session.usuario || null });
 });
 
 
