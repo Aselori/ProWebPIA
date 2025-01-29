@@ -212,8 +212,8 @@ app.get('/profile', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM obtener_comentarios_de_usuario($1)', [usuario.id]);
     const comentarios = result.rows.map(comentario => ({
-      profesor: comentario.profesor_nombre,
-      materia: comentario.subject_nombre,
+      profesor: comentario.profesor_nombre_completo,
+      materia: comentario.materia_nombre,
       contenido: comentario.contenido,
       likes: comentario.likes,
       dislikes: comentario.dislikes,
