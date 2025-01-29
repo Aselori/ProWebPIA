@@ -160,7 +160,7 @@ app.post('/new', async (req, res) => {
     // Insertar el nuevo usuario en la base de datos con role_id = 1
     await pool.query(
       'INSERT INTO users (username,email,password,role_id) VALUES ($1, $2, $3, $4)',
-      [username,email,password,1]
+      [username,email,password,2]
     );
 
     return res.redirect('/login?message=Se creó la cuenta con éxito');
