@@ -281,39 +281,51 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Ruta de dashboard para administradores
+
+
 app.get('/dashboard', async (req, res) => {
-  if (!req.session.usuario || req.session.usuario.role !== 1) { // Ensure only admins can access
+  if (!req.session.usuario || req.session.usuario.role !== 1) {
     return res.redirect('/');
   }
 
   try {
+    // Obtener lista de tablas de la base de datos con ORDER BY
+    const result = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename ASC");
+    const tables = result.rows.map(row => row.tablename);
+
     const datosDashboard = await obtenerDatosDashboard();
-    res.render('dashboard', { usuario: req.session.usuario, datosDashboard });
+    res.render('dashboard', { usuario: req.session.usuario, datosDashboard, tables });
   } catch (error) {
-    console.error('Error al renderizar el dashboard:', error);
-    res.status(500).send('Error interno del servidor');
+    console.error("Error obteniendo datos del dashboard o tablas:", error);
+    res.status(500).send("Error en el servidor");
   }
 });
 
 app.get('/dashboard/:tableName', async (req, res) => {
-  const { tableName } = req.params;
-  const validTables = [
-    'users', 'professors', 'subjects', 'comments', 
-    'reports', 'report_reasons', 'roles', 
-    'professor_likes', 'comment_likes', 'professor_subjects'
-  ];
-
-  if (!validTables.includes(tableName)) {
-    return res.status(404).send('Tabla no encontrada');
+  if (!req.session.usuario || req.session.usuario.role !== 1) {
+    return res.redirect('/');
   }
 
+  const { tableName } = req.params;
+
   try {
-    const data = await pool.query(`SELECT * FROM ${tableName}`);
-    res.render('crud_table', { tableName, data: data.rows });
+    
+    const result = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename ASC");
+    const tables = result.rows.map(row => row.tablename);
+
+    // Verificar si la tabla solicitada existe en la lista de tablas
+    if (!tables.includes(tableName)) {
+      return res.status(404).send("Tabla no encontrada");
+    }
+
+    // Obtener datos de la tabla seleccionada
+    const dataResult = await pool.query(`SELECT * FROM ${tableName}`);
+    const data = dataResult.rows;
+
+    res.render('crud_table', { usuario: req.session.usuario, tables, tableName, data });
   } catch (error) {
-    console.error(`Error al obtener los datos de la tabla ${tableName}:`, error);
-    res.status(500).send('Error al obtener los datos');
+    console.error(`Error obteniendo datos de ${tableName}:`, error);
+    res.status(500).send("Error en el servidor");
   }
 });
 
@@ -473,9 +485,11 @@ app.get('/nosotros', (req, res) => {
   res.render('nosotros', { usuario: req.session.usuario || null });
 });
 
+
+
 // Ruta para la página "FAQ"
 app.get('/faq', (req, res) => {
-  res.render('faq', { usuario: req.session.usuario || null });
+  res.render('FAQ', { usuario: req.session.usuario || null });
 });
 
 

@@ -8,8 +8,10 @@ module.exports = {
     "./views/profesor_profile.ejs",
     "./views/agregar_maestro.ejs",
     "./views/dashboard.ejs",
-    "./crud_table.ejs",
-    "./views/partials/header.ejs"
+    "./views/crud_table.ejs",
+    "./views/partials/header.ejs",
+    "./views/FAQ.ejs",
+    "./views/nosotros.ejs"
   ],
   theme: {
     extend: {},
