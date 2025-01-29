@@ -124,6 +124,26 @@ app.get('/buscar', async (req, res) => {
   }
 });
 
+app.post('/updateStatus', async (req, res) => {
+  const { id } = req.body;
+
+  try {
+      const result = await pool.query(
+          'UPDATE report_status SET status_name = $1 WHERE id = $2;',
+          ['Revisado', id]
+      );
+
+      // Verificar si se actualizó algún registro
+      if (result.rowCount > 0) {
+          res.json({ success: true, message: "Estado actualizado correctamente" });
+      } else {
+          res.status(404).json({ success: false, message: "No se encontró el ID" });
+      }
+  } catch (error) {
+      console.error("Error al actualizar el estado:", error);
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+});
 
 // Ruta para la página de login
 app.get('/login', (req, res) => res.render('login'));
