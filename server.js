@@ -147,6 +147,66 @@ app.post('/deleteCrud', async (req, res) => {
   }
 });
 
+app.post('/cambiarNombre', async (req, res) => {
+  const { id, newName } = req.body;
+
+  // Validaciones básicas
+  if (!id || !newName) {
+    return res.status(400).json({ message: "ID y nuevo nombre son requeridos" });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE users SET username = $1 WHERE id = $2 RETURNING *', 
+      [newName, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Nombre de usuario actualizado con éxito", user: result.rows[0] });
+  } catch (error) {
+    console.error("Error al cambiar el nombre:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.post('/borrarComentario', async (req, res) => {
+  const { commentID } = req.body;
+
+  // Validación básica
+  if (!commentID) {
+    return res.status(400).json({ message: "El ID del comentario es requerido" });
+  }
+
+  try {
+    // Eliminar los "likes" asociados al comentario
+    const likesDeleteResult = await pool.query(
+      'DELETE FROM comment_likes WHERE comment_id = $1',
+      [commentID]
+    );
+
+    // Eliminar el comentario
+    const commentDeleteResult = await pool.query(
+      'DELETE FROM comments WHERE id = $1 RETURNING *',
+      [commentID]
+    );
+
+    // Si no se eliminó ningún comentario, significa que no existe
+    if (commentDeleteResult.rowCount === 0) {
+      return res.status(404).json({ message: "Comentario no encontrado" });
+    }
+
+    res.json({ message: "Comentario eliminado correctamente", deletedComment: commentDeleteResult.rows[0] });
+
+  } catch (error) {
+    console.error("Error al borrar comentario:", error);
+    res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+
 app.post('/updateStatus', async (req, res) => {
   const { id } = req.body;
 
