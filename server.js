@@ -208,15 +208,14 @@ app.post('/borrarComentario', async (req, res) => {
 
 
 app.post('/updateStatus', async (req, res) => {
-  const { id } = req.body;
+  const { id, newStatus } = req.body;
 
   try {
       const result = await pool.query(
           'UPDATE reports SET status_id = $1 WHERE id = $2;',
-          [1, id]
+          [newStatus, id]
       );
 
-      // Verificar si se actualizó algún registro
       if (result.rowCount > 0) {
           res.json({ success: true, message: "Estado actualizado correctamente" });
       } else {
@@ -227,6 +226,7 @@ app.post('/updateStatus', async (req, res) => {
       res.status(500).json({ success: false, message: "Error interno del servidor" });
   }
 });
+
 
 // Ruta para la página de login
 app.get('/login', (req, res) => res.render('login'));
