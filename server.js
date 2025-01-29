@@ -127,6 +127,49 @@ app.get('/buscar', async (req, res) => {
 
 // Ruta para la página de login
 app.get('/login', (req, res) => res.render('login'));
+// Ruta para la página de register
+app.get('/register', (req, res) => {res.render('register'); });
+
+//ruta para agregar nuevo usuario
+app.post('/new', async (req, res) => {
+  const { email, password, username, 'confirm-password': confirmPassword } = req.body;
+
+  try {
+    // Verificar si el nombre de usuario ya existe
+    const userExists = await pool.query('SELECT 1 FROM users WHERE username = $1', [username]);
+
+    if (userExists.rows.length > 0) {
+      return res.redirect('/register?message=El nombre de usuario ya está registrado&messageType=error');
+    }
+
+    // Verificar si el correo ya está registrado
+    const emailExists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
+
+    if (emailExists.rows.length > 0) {
+      return res.redirect('/register?message=El correo ya está registrado&messageType=error');
+    }
+
+    // Validar que las contraseñas coincidan
+    if (password !== confirmPassword) {
+      return res.redirect('/register?message=Las contraseñas no coinciden&messageType=error');
+    }
+
+
+    console.log("Insertando usuario con:", username, email, password); // Verificar antes de la inserción
+
+    // Insertar el nuevo usuario en la base de datos con role_id = 1
+    await pool.query(
+      'INSERT INTO users (username,email,password,role_id) VALUES ($1, $2, $3, $4)',
+      [username,email,password,1]
+    );
+
+    return res.redirect('/login?message=Se creó la cuenta con éxito');
+  } catch (err) {
+    console.error('Error al registrar el usuario:', err);
+    res.status(500).send('Error al crear la cuenta');
+  }
+});
+
 
 // Validación de inicio de sesión
 app.post('/login_val', async (req, res) => {
