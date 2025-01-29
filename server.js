@@ -175,10 +175,21 @@ app.post('/new', async (req, res) => {
 app.post('/login_val', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password]);
+    const result = await pool.query(
+      'SELECT id::integer AS id, username, role_id::integer AS role_id FROM users WHERE email = $1 AND password = $2', 
+      [email, password]
+    );
+
     if (result.rows.length > 0) {
       const user = result.rows[0];
-      req.session.usuario = { id: user.id, nombre: user.username, role: user.role_id };
+
+      // Asegurar que id y role sean enteros
+      req.session.usuario = { 
+        id: user.id, 
+        nombre: user.username, 
+        role: user.role_id 
+      };
+
       console.log('Usuario después del login:', req.session.usuario);
       res.redirect('/');
     } else {
@@ -189,6 +200,7 @@ app.post('/login_val', async (req, res) => {
     res.status(500).send('Error en el servidor');
   }
 });
+
 
 // Ruta de perfil del usuario
 app.get('/profile', async (req, res) => {
@@ -378,6 +390,8 @@ app.get('/perfil-profesor', async (req, res) => {
 
 // Ruta para agregar un nuevo maestro
 app.get('/agregar-maestro', (req, res) => {
+
+  console.log(req.session.usuario);
   // Asegúrate de que el usuario esté autenticado y autorizado (opcional)
   if (!req.session.usuario || req.session.usuario.role !== 1) {
     return res.redirect('/');
