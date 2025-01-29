@@ -147,14 +147,13 @@ app.post('/deleteCrud', async (req, res) => {
   }
 });
 
-
 app.post('/updateStatus', async (req, res) => {
   const { id } = req.body;
 
   try {
       const result = await pool.query(
-          'UPDATE report_status SET status_name = $1 WHERE id = $2;',
-          ['Revisado', id]
+          'UPDATE reports SET status_id = $1 WHERE id = $2;',
+          [1, id]
       );
 
       // Verificar si se actualizó algún registro
@@ -175,6 +174,25 @@ app.get('/login', (req, res) => res.render('login'));
 app.get('/register', (req, res) => {res.render('register'); });
 
 //ruta para agregar nuevo usuario
+
+app.post('/newReport', async (req,res)=> {
+  const {user_id,comment_id,reason} = req.body 
+  try { 
+    // Llamar a la función insert_report en PostgreSQL
+    const result = await pool.query(
+        'SELECT insert_report($1, $2, $3)',
+        [user_id, comment_id, reason]
+    );
+
+    res.json({ success: true, message: "Reporte creado con éxito" });
+
+} catch (error) {
+    console.error("Error al insertar el reporte:", error);
+    res.status(500).json({ success: false, message: "Error interno del servidor" });
+}
+})
+
+
 app.post('/new', async (req, res) => {
   const { email, password, username, 'confirm-password': confirmPassword } = req.body;
 
