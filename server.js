@@ -383,6 +383,43 @@ app.post('/like-dislike', async (req, res) => {
   }
 });
 
+app.post('/like-dislike-comment', async (req, res) => {
+  const { commentId, isLike } = req.body;
+
+  // Verificar si el usuario está autenticado
+  if (!req.session || !req.session.usuario) {
+    return res.status(401).json({ success: false, message: 'Debes iniciar sesión para realizar esta acción.' });
+  }
+
+  try {
+    // Insertar o actualizar el like/dislike en comment_likes
+    await pool.query(`
+      INSERT INTO comment_likes (user_id, comment_id, is_like)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, comment_id) 
+      DO UPDATE SET is_like = $3;
+    `, [req.session.usuario.id, commentId, isLike]);
+
+    // Obtener la cantidad de likes y dislikes después de la actualización
+    const likeResult = await pool.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE is_like = true) AS likes,
+        COUNT(*) FILTER (WHERE is_like = false) AS dislikes
+      FROM comment_likes
+      WHERE comment_id = $1;
+    `, [commentId]);
+
+    // Obtener los valores de la consulta (si no existen, devolver 0)
+    const newLikes = likeResult.rows[0].likes || 0;
+    const newDislikes = likeResult.rows[0].dislikes || 0;
+
+    res.json({ success: true, newLikes, newDislikes });
+  } catch (error) {
+    console.error('Error al manejar la acción de like/dislike en comentario:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
 // Ruta para mostrar el perfil de un profesor
 app.get('/perfil-profesor', async (req, res) => {
   const query = req.query.q?.toLowerCase();
