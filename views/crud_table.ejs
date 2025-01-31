@@ -43,19 +43,72 @@
                 <% data.forEach((row, index) => { %>
                     <tr class="<%= index % 2 === 0 ? 'bg-white' : 'bg-gray-100' %>">
                         <% Object.entries(row).forEach(([key, value]) => { %>
-                            <td class="py-2 text-center px-4 border-b"><%= value %></td>
+                            <td class="py-2 text-center px-4 border-b" data-key="<%= key %>">
+                                <% if (["id", "created_at", "updated_at"].includes(key)) { %>
+                                    <span><%= value %></span>
+                                <% } else { %>
+                                    <span><%= value %></span>
+                                    <input type="text" value="<%= value %>" placeholder="<%= value %>" class="hidden border px-2 py-1 rounded w-full">
+                                <% } %>
+                            </td>
                         <% }) %>
                         <td class="py-2 px-4 border-b text-center">
-                            <% if (tableName === 'reports' && Number(row.status_id) === 3) { %>
-                                <button class="text-blue-500" onclick="updateStatus(<%= row.id %>)">Resuelta</button>
+                            <% if (["report_status", "professor_likes", "comment_likes", "roles"].includes(tableName)) { %>
+                                <p class="text-500">No disponible</p>
                             <% } %>
-                            <a href="#" class="text-red-500 ml-2">Eliminar</a>
+                            <% if (["users", "professor_subjects", "comments", "professors", "report_reasons"].includes(tableName)) { %>
+                                <button class="text-blue-500 edit-btn">Editar</button>
+                                <button class="text-green-500 hidden save-btn" data-id="<%= row.id %>" data-table="<%= tableName %>">Guardar</button>
+                            <% } %>
+                            <% if (tableName === 'reports' && Number(row.status_id) === 3) { %>
+                                <button class="text-blue-500" onclick="updateStatus('<%= row.id %>')">Resolver</button>
+                            <% } %>
+                            <% if (["users", "professor_subjects", "comments", "professors", "reports", "report_reasons", "subjects"].includes(tableName)) { %>
+                                <button class="text-red-500 ml-2 delete-btn" onclick="deleteCrud('<%= row.id %>', '<%= tableName %>')">Eliminar</button>
+                                <button class="text-gray-500 ml-2 hidden cancel-btn">Cancelar</button>
+                            <% } %>
                         </td>
                     </tr>
                 <% }) %>
             </tbody>
+            
+            
         </table>
-        <button class="mt-4 bg-green-500 px-4 py-2 rounded">Agregar Nuevo</button>
+        <div class="mt-10">
+            <form action="/dashboard/<%= tableName %>/add" method="POST" class="mb-4">
+                <% const fieldConfigs = {
+                    users: [
+                        { type: "text", name: "username", placeholder: "Nombre de usuario" },
+                        { type: "email", name: "email", placeholder: "Correo electrónico" },
+                        { type: "password", name: "password", placeholder: "Contraseña" },
+                        { type: "number", name: "role_id", placeholder: "Rol (ej. 2 para usuario)" }
+                    ],
+                    professors: [
+                        { type: "text", name: "first_name", placeholder: "Nombre" },
+                        { type: "text", name: "last_name", placeholder: "Apellido" }
+                    ],
+                    subjects: [
+                        { type: "text", name: "name", placeholder: "Nombre de la materia" }
+                    ],
+                    professor_subjects: [
+                        { type: "number", name: "professor_id", placeholder: "ID del Profesor" },
+                        { type: "number", name: "subject_id", placeholder: "ID de la Materia" }
+                    ],
+                    report_reasons: [
+                        { type: "text", name: "reason_name", placeholder: "Descripción del motivo" }
+                    ]
+                }[tableName]; %>
+            
+                <% if (fieldConfigs) { %>
+                    <% fieldConfigs.forEach(field => { %>
+                        <input class="p-4" type="<%= field.type %>" name="<%= field.name %>" placeholder="<%= field.placeholder %>" required>
+                    <% }) %>
+                <% } %>
+            
+                <button type="submit" class="bg-green-500 text-white p-4 rounded">Agregar</button>
+            </form>
+        </div>
+        
     </main>
     <script src='/js/cruds.js' ></script>
 </body>

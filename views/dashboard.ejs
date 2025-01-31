@@ -67,6 +67,12 @@
             </a>
         </div>
 
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-12 h-[40vh] w-full">
+            <div class="w-full h-[35vh] overflow-x-auto">
+                <canvas id="usersChart" class="w-full mx-auto"></canvas>
+            </div>
+        </div>
+
         <!-- Dashboard Content -->
         <div class="grid grid-cols-3 gap-8">
             <div class="bg-black text-white p-8 rounded shadow">
@@ -90,6 +96,11 @@
                 <p class="text-3xl mt-4"><%= datosDashboard.totalComentarios %></p>
             </div>
         </div>
+        
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src='/js/dashboard.js' ></script>
+
 </body>
 </html>

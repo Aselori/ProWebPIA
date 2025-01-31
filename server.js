@@ -61,11 +61,11 @@ async function obtenerProfesores() {
 async function obtenerDatosDashboard() {
   try {
     const [usuarios, maestros, materias, reportes, comentarios] = await Promise.all([
-      pool.query('SELECT COUNT(*) AS total FROM users'), // Get total users
-      pool.query('SELECT COUNT(*) AS total FROM professors'), // Get total professors (maestros)
-      pool.query('SELECT COUNT(*) AS total FROM subjects'), // Get total subjects (materias)
-      pool.query('SELECT COUNT(*) AS total FROM reports'), // Get total reports (assuming you have a table called 'reports')
-      pool.query('SELECT COUNT(*) AS total FROM comments') // Get total comments
+      pool.query('SELECT COUNT(*) AS total FROM users'),
+      pool.query('SELECT COUNT(*) AS total FROM professors'), 
+      pool.query('SELECT COUNT(*) AS total FROM subjects'),
+      pool.query('SELECT COUNT(*) AS total FROM reports'), 
+      pool.query('SELECT COUNT(*) AS total FROM comments') 
     ]);
 
     return {
@@ -125,52 +125,104 @@ app.get('/buscar', async (req, res) => {
 });
 
 app.post('/deleteCrud', async (req, res) => {
-  const { id, tabla } = req.body;
+    const { id, tabla } = req.body;
 
-  // Listado de tablas permitidas (para evitar SQL Injection)
-  const tablasPermitidas = ['report_status', 'users', 'comments', 'professors'];
+    // Definir las tablas permitidas y sus claves primarias
+    const tablasPermitidas = {
+        'users': 'id',
+        'professor_subjects': 'id',
+        'comments': 'id',
+        'professors': 'id',
+        'reports': 'id',
+        'report_status': 'id',
+        'subjects': 'id'
+    };
 
-  try {
-      // Construir la consulta de forma segura
-      const query = `DELETE FROM ${tabla} WHERE id = $1 RETURNING *;`;
-
-      const result = await pool.query(query, [id]);
-
-      if (result.rowCount > 0) {
-          res.json({ success: true, message: "Registro eliminado correctamente", deleted: result.rows });
-      } else {
-          res.status(404).json({ success: false, message: "No se encontró el ID" });
-      }
-  } catch (error) {
-      console.error("Error al eliminar:", error);
-      res.status(500).json({ success: false, message: "Error interno del servidor" });
-  }
-});
-
-app.post('/cambiarNombre', async (req, res) => {
-  const { id, newName } = req.body;
-
-  // Validaciones básicas
-  if (!id || !newName) {
-    return res.status(400).json({ message: "ID y nuevo nombre son requeridos" });
-  }
-
-  try {
-    const result = await pool.query(
-      'UPDATE users SET username = $1 WHERE id = $2 RETURNING *', 
-      [newName, id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    // Validar que la tabla esté permitida
+    if (!tablasPermitidas[tabla]) {
+        return res.status(400).json({ success: false, message: "Tabla no permitida" });
     }
 
-    res.json({ message: "Nombre de usuario actualizado con éxito", user: result.rows[0] });
+    try {
+        // Obtener la clave primaria correcta de la tabla
+        const primaryKey = tablasPermitidas[tabla];
+
+        const query = `DELETE FROM ${tabla} WHERE ${primaryKey} = $1 RETURNING *;`;
+        const result = await pool.query(query, [id]);
+
+        if (result.rowCount > 0) {
+            res.json({ success: true, message: "Registro eliminado correctamente", deleted: result.rows });
+        } else {
+            res.status(404).json({ success: false, message: "No se encontró el ID" });
+        }
+    } catch (error) {
+        console.error("Error al eliminar:", error);
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
+    }
+});
+
+
+app.post('/cambiarNombre', async (req, res) => {
+  if (!req.session || !req.session.usuario) {
+      return res.status(401).json({ message: "No autorizado" });
+  }
+
+  const userId = req.session.usuario.id;
+  const { newName } = req.body;
+
+  if (!newName || newName.trim() === "") {
+      return res.status(400).json({ message: "El nuevo nombre es requerido." });
+  }
+
+  try {
+      // Verificar si el nuevo nombre ya existe en la base de datos
+      const checkUser = await pool.query(
+          'SELECT id FROM users WHERE username = $1 AND id != $2',
+          [newName, userId]
+      );
+
+      if (checkUser.rowCount > 0) {
+          return res.status(409).json({ message: "El nombre de usuario ya está en uso." });
+      }
+
+      // Si no existe, proceder con la actualización
+      const result = await pool.query(
+          'UPDATE users SET username = $1 WHERE id = $2 RETURNING *',
+          [newName, userId]
+      );
+
+      if (result.rowCount === 0) {
+          return res.status(404).json({ message: "Usuario no encontrado." });
+      }
+
+      // ✅ FORZAR ACTUALIZACIÓN DE LA SESIÓN
+      req.session.usuario.username = newName;
+      req.session.save(err => {
+          if (err) {
+              console.error("Error al guardar la sesión:", err);
+              return res.status(500).json({ message: "Error en la sesión." });
+          }
+          res.json({ 
+            message: "Nombre de usuario actualizado con éxito.\nVuelve a iniciar sesión para ver el cambio.", 
+            user: result.rows[0] 
+        });
+      });
+
   } catch (error) {
-    console.error("Error al cambiar el nombre:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+      console.error("Error al cambiar el nombre en la base de datos:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
   }
 });
+
+
+
+app.get('/profileData', (req, res) => {
+    if (!req.session.usuario) {
+        return res.status(401).json({ message: "No autorizado" });
+    }
+    res.json({ username: req.session.usuario.username });
+});
+
 
 app.post('/borrarComentario', async (req, res) => {
   const { commentID } = req.body;
@@ -348,6 +400,7 @@ app.get('/profile', async (req, res) => {
   }
 });
 
+
 // Ruta de logout
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -381,44 +434,129 @@ app.get('/dashboard', async (req, res) => {
 
 app.get('/dashboard/:tableName', async (req, res) => {
   if (!req.session.usuario || req.session.usuario.role !== 1) {
-    return res.redirect('/');
+      return res.redirect('/');
   }
 
   const { tableName } = req.params;
 
   try {
-    
-    const result = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename ASC");
-    const tables = result.rows.map(row => row.tablename);
+      // Obtener todas las tablas disponibles en la base de datos
+      const resultTables = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public'");
+      const tables = resultTables.rows.map(row => row.tablename);
 
-    // Verificar si la tabla solicitada existe en la lista de tablas
-    if (!tables.includes(tableName)) {
-      return res.status(404).send("Tabla no encontrada");
-    }
+      // Verificar si la tabla solicitada existe en la base de datos
+      if (!tables.includes(tableName)) {
+          return res.status(404).send("Tabla no encontrada");
+      }
 
-    // Obtener datos de la tabla seleccionada
-    const dataResult = await pool.query(`SELECT * FROM ${tableName}`);
-    const data = dataResult.rows;
+      // Obtener la primera columna de la tabla para ordenar
+      const columnResult = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = $1 
+          ORDER BY ordinal_position ASC 
+          LIMIT 1;
+      `, [tableName]);
 
-    res.render('crud_table', { usuario: req.session.usuario, tables, tableName, data });
+      if (columnResult.rowCount === 0) {
+          return res.status(404).send("No se encontraron columnas en la tabla");
+      }
+
+      const firstColumn = columnResult.rows[0].column_name;
+
+      // Obtener los datos de la tabla ordenados por la primera columna
+      const result = await pool.query(`SELECT * FROM ${tableName} ORDER BY ${firstColumn} ASC`);
+      const data = result.rows;
+
+      res.render('crud_table', { usuario: req.session.usuario, tableName, tables, data });
   } catch (error) {
-    console.error(`Error obteniendo datos de ${tableName}:`, error);
-    res.status(500).send("Error en el servidor");
+      console.error(`Error obteniendo datos de ${tableName}:`, error);
+      res.status(500).send("Error en el servidor");
   }
 });
 
+app.post('/dashboard/update', async (req, res) => {
+  let { tableName, id, ...data } = req.body;
+
+  // Convertir `id` a número
+  id = parseInt(id, 10);
+  if (!tableName || isNaN(id)) {
+      return res.status(400).json({ success: false, message: "Parámetros inválidos: tableName o ID incorrecto." });
+  }
+
+  // Validar si la tabla permite edición
+  const tablasEditables = ["users", "professors", "subjects", "comments", "report_reasons"];
+  if (!tablasEditables.includes(tableName)) {
+      return res.status(400).json({ success: false, message: "No permitido modificar esta tabla." });
+  }
+
+  // Construcción dinámica de la consulta evitando el ID
+  const fields = Object.keys(data)
+      .map((key, index) => `"${key}" = $${index + 1}`)
+      .join(", ");
+  
+  const values = Object.values(data);
+
+  try {
+      await pool.query(`UPDATE ${tableName} SET ${fields} WHERE id = $${values.length + 1}`, [...values, id]);
+      res.json({ success: true, message: "Registro actualizado correctamente." });
+  } catch (error) {
+      console.error("Error al actualizar:", error);
+      res.status(500).json({ success: false, error });
+  }
+});
+
+
+
+
+
+app.get('/users-by-date', async (req, res) => {
+  try {
+      const result = await pool.query(`
+          SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS date, COUNT(*)::integer AS count
+          FROM users
+          GROUP BY date
+          ORDER BY date ASC;
+      `);
+      res.json(result.rows);
+  } catch (error) {
+      console.error("Error fetching user data:", error);
+      res.status(500).json({ error: "Server error" });
+  }
+});
 
 app.post('/dashboard/:tableName/add', async (req, res) => {
   const { tableName } = req.params;
-  const validTables = ['users', 'professors', 'subjects', 'comments', 'reports', 'report_reasons', 'roles', 'professor_likes', 'comment_likes', 'professor_subjects'];
-  if (!validTables.includes(tableName)) {
-    return res.status(404).send('Tabla no encontrada');
-  }
+  const data = req.body;
 
-  // Aquí puedes agregar lógica para manejar la inserción de datos.
-  // Necesitarás adaptar esto según los campos específicos de cada tabla.
-  res.send(`Agregar un nuevo registro a la tabla ${tableName}`);
+  const tableColumns = {
+      users: ["username", "email", "password", "role_id"],
+      professors: ["first_name", "last_name"],
+      subjects: ["name"],
+      comments: ["user_id", "professor_id", "content"],
+      reports: ["user_id", "comment_id", "reason"],
+      report_reasons: ["reason_name"],
+      roles: ["name"],
+      professor_likes: ["professor_id", "user_id", "is_like"],
+      comment_likes: ["comment_id", "user_id", "is_like"],
+      professor_subjects: ["professor_id", "subject_id"]
+  };
+
+  if (!tableColumns[tableName]) return res.redirect(`/dashboard/${tableName}?message=Tabla no permitida`);
+
+  try {
+      const columns = tableColumns[tableName];
+      const values = columns.map(col => data[col]);
+      const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+
+      await pool.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *;`, values);
+      res.redirect(`/dashboard/${tableName}?message=Registro agregado correctamente`);
+  } catch (error) {
+      console.error(`Error al insertar en ${tableName}:`, error);
+      res.redirect(`/dashboard/${tableName}?message=Error al agregar registro`);
+  }
 });
+
 
 
 // Ruta para manejar la funcionalidad de like/dislike
