@@ -9,8 +9,8 @@
 <body class="bg-gray-100 flex">
 
     <!-- Sidebar -->
-    <aside class="bg-black text-white w-64 h-screen pl-12 py-6">
-        <div class="text-3xl font-bold mb-16 mt-4">FIME</div>
+    <aside class="bg-black text-white w-64 pl-4 py-6">
+        <div class="text-3xl font-bold mb-6 pl-4 mt-4">FIME</div>
         <nav class="space-y-4">
             <% tables.forEach(table => { %>
                 <a href="/dashboard/<%= table %>" class="block py-2 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
@@ -18,7 +18,7 @@
         </nav>
         <div class="mx-auto">
             <a href="/profile">
-                <button class="mt-20 ml-10 text-white flex items-center space-x-2">Atras 
+                <button class="mt-8 mb-2 ml-10 text-white flex items-center space-x-2">Atras 
                     <svg class="h-4 w-4 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 10L3.64645 10.3536L3.29289 10L3.64645 9.64645L4 10ZM20.5 18C20.5 18.2761 20.2761 18.5 20 18.5C19.7239 18.5 19.5 18.2761 19.5 18L20.5 18ZM8.64645 15.3536L3.64645 10.3536L4.35355 9.64645L9.35355 14.6464L8.64645 15.3536ZM3.64645 9.64645L8.64645 4.64645L9.35355 5.35355L4.35355 10.3536L3.64645 9.64645ZM4 9.5L14 9.5L14 10.5L4 10.5L4 9.5ZM20.5 16L20.5 18L19.5 18L19.5 16L20.5 16ZM14 9.5C17.5898 9.5 20.5 12.4101 20.5 16L19.5 16C19.5 12.9624 17.0376 10.5 14 10.5L14 9.5Z" fill="#222222"></path> </g>
                     </svg>
                 </button>
@@ -27,19 +27,10 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-grow py-10 px-20">
-        <!-- Header with search bar and profile icon -->
-        <div class="flex items-center justify-between mb-16">
-            <!-- Search bar -->
-            <div class="relative w-full max-w-lg">
-                <input id="busqueda" type="text" placeholder="Buscar" class="w-full bg-black text-white rounded-full pl-10 py-2">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg class="text-white h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 18l6-6m0 0l-6-6m6 6H3"></path>
-                    </svg>
-                </div>
-            </div>
-
+    <main class="flex-grow pt-10 px-20">
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-12 h-[50vh] w-full">
+            <!-- Header with profile icon -->
+        <div class="flex items-center justify-end">           
             <!-- Profile icon -->
             <a href="/profile" class="bg-gray-300 rounded-full h-12 w-12 flex items-center justify-center ml-4">
                 <!-- Profile Icon -->
@@ -66,8 +57,6 @@
                 </svg>
             </a>
         </div>
-
-        <div class="bg-white p-6 rounded-lg shadow-lg mb-12 h-[40vh] w-full">
             <div class="w-full h-[35vh] overflow-x-auto">
                 <canvas id="usersChart" class="w-full mx-auto"></canvas>
             </div>

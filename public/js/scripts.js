@@ -1,3 +1,5 @@
+console.log("✅ scripts.js ha sido cargado en profile.ejs");
+
 document.addEventListener('DOMContentLoaded', function() { 
 
     
@@ -142,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const diffB = parseInt(b.getAttribute('data-diff'), 10);
 
             // Invert the sorting logic
-            return order === 'RATING ASC' ? diffA - diffB : diffB - diffA;
+            return order === 'Rating Asc' ? diffA - diffB : diffB - diffA;
         });
 
         // Reorder elements in the container
@@ -157,5 +159,155 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initial sort by default
-    sortProfesores('RATING DESC');
+    sortProfesores('Rating Desc');
+});
+
+let id = "<%= usuario.id %>";  // Esto inyectará el valor del id en el script
+
+        
+const loginLink = document.getElementById('login-link');
+
+
+if (id === 0) {
+    loginLink.href = '/login'; // Endpoint para id = 0
+} else if (id > 0) {
+    loginLink.href = '/profile'; // Endpoint para id > 0
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    console.log("📌 scripts.js cargado correctamente");
+
+    document.body.addEventListener('click', function (event) {
+        const likeBtn = event.target.closest('.like-comment-button');
+        const dislikeBtn = event.target.closest('.dislike-comment-button');
+
+        if (likeBtn) {
+            const commentId = likeBtn.dataset.commentId;
+            if (!commentId || isNaN(commentId)) {
+                console.error("❌ Error: commentId inválido en like button", commentId);
+                return;
+            }
+            handleCommentLikeDislike(commentId, true);
+        }
+
+        if (dislikeBtn) {
+            const commentId = dislikeBtn.dataset.commentId;
+            if (!commentId || isNaN(commentId)) {
+                console.error("❌ Error: commentId inválido en dislike button", commentId);
+                return;
+            }
+            handleCommentLikeDislike(commentId, false);
+        }
+    });
+
+    function handleCommentLikeDislike(commentId, isLike) {
+        console.log("🚀 Enviando like/dislike a /like-dislike-comment con:", commentId, isLike);
+
+        fetch('/like-dislike-comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commentId: parseInt(commentId, 10), isLike })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("✅ Respuesta del servidor en profile.ejs:", data);
+
+            if (data.success) {
+                const likeCountSpan = document.querySelector(`.like-comment-count[data-comment-id="${commentId}"]`);
+                const dislikeCountSpan = document.querySelector(`.dislike-comment-count[data-comment-id="${commentId}"]`);
+
+                if (!likeCountSpan || !dislikeCountSpan) {
+                    console.error(`❌ No se encontraron los contadores para actualizar likes/dislikes del comentario ${commentId}`);
+                    return;
+                }
+
+                likeCountSpan.textContent = data.newLikes;
+                dislikeCountSpan.textContent = data.newDislikes;
+            } else {
+                console.error("❌ Error en la respuesta del servidor:", data);
+            }
+        })
+        .catch(error => console.error("❌ Error en profile.ejs al procesar la acción:", error));
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const solicitudForm = document.getElementById('solicitud-maestro-form');
+    const solicitudesContainer = document.getElementById('solicitudes-container');
+
+    if (solicitudForm) {
+        solicitudForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const firstName = document.getElementById('first-name').value.trim();
+            const lastName = document.getElementById('last-name').value.trim();
+
+            if (!firstName || !lastName) {
+                alert('Por favor, completa todos los campos.');
+                return;
+            }
+
+            fetch('/nueva-solicitud-maestro', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ first_name: firstName, last_name: lastName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => console.error('Error al enviar la solicitud:', error));
+        });
+    }
+
+    if (solicitudesContainer) {
+        fetch('/solicitudes-maestro')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.solicitudes.length > 0) {
+                    solicitudesContainer.innerHTML = '';
+                    data.solicitudes.forEach(solicitud => {
+                        const div = document.createElement('div');
+                        div.innerHTML = `
+                            <div class="solicitud-item">
+                                <p><strong>${solicitud.first_name} ${solicitud.last_name}</strong></p>
+                                <button onclick="gestionarSolicitud(${solicitud.id}, 'approve')">✅ Aprobar</button>
+                                <button onclick="gestionarSolicitud(${solicitud.id}, 'reject')">❌ Rechazar</button>
+                            </div>
+                        `;
+                        solicitudesContainer.appendChild(div);
+                    });
+                } else {
+                    solicitudesContainer.innerHTML = '<p>No hay solicitudes pendientes.</p>';
+                }
+            })
+            .catch(error => console.error('Error al obtener las solicitudes:', error));
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    fetch("/solicitudes-maestro")
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.solicitudes.length > 0) {
+                solicitudesContainer.innerHTML = "";
+                data.solicitudes.forEach(solicitud => {
+                    const div = document.createElement("div");
+                    div.innerHTML = `
+                        <div class="solicitud-item">
+                            <p><strong>${solicitud.first_name} ${solicitud.last_name}</strong></p>
+                            <button onclick="gestionarSolicitud(${solicitud.id}, 'approve')">✅ Aprobar</button>
+                            <button onclick="gestionarSolicitud(${solicitud.id}, 'reject')">❌ Rechazar</button>
+                        </div>
+                    `;
+                    solicitudesContainer.appendChild(div);
+                });
+            } else {
+                solicitudesContainer.innerHTML = "<p>No hay solicitudes pendientes.</p>";
+            }
+        })
+        .catch(error => console.error("Error al obtener las solicitudes:", error));
 });

@@ -7,8 +7,8 @@
     <link href="/css/styles.css" rel="stylesheet"> 
 </head>
 <body class="bg-gray-100 flex">
-    <aside class="bg-black text-white w-64 h-screen pl-12 py-6">
-        <div class="text-3xl font-bold mb-16 mt-4">FIME</div>
+    <aside class="bg-black text-white w-64 pl-4 py-6">
+        <div class="text-3xl font-bold mb-6 pl-4 mt-4">FIME</div>
         <nav class="space-y-4">
             <% tables.forEach(table => { %>
                 <a href="/dashboard/<%= table %>" class="block py-2 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
@@ -16,7 +16,7 @@
         </nav>
         <div class="mx-auto">
             <a href="/dashboard">
-                <button class="mt-20 ml-10 text-white flex items-center space-x-2">Atras 
+                <button class="mt-8 mb-2 ml-10 text-white flex items-center space-x-2">Atras 
                     <svg class="h-4 w-4 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 10L3.64645 10.3536L3.29289 10L3.64645 9.64645L4 10ZM20.5 18C20.5 18.2761 20.2761 18.5 20 18.5C19.7239 18.5 19.5 18.2761 19.5 18L20.5 18ZM8.64645 15.3536L3.64645 10.3536L4.35355 9.64645L9.35355 14.6464L8.64645 15.3536ZM3.64645 9.64645L8.64645 4.64645L9.35355 5.35355L4.35355 10.3536L3.64645 9.64645ZM4 9.5L14 9.5L14 10.5L4 10.5L4 9.5ZM20.5 16L20.5 18L19.5 18L19.5 16L20.5 16ZM14 9.5C17.5898 9.5 20.5 12.4101 20.5 16L19.5 16C19.5 12.9624 17.0376 10.5 14 10.5L14 9.5Z" fill="#222222"></path> </g>
                     </svg>
                 </button>
@@ -24,7 +24,17 @@
         </div>
     </aside>
 
-    <main class="flex-grow p-20">
+    <main class="flex-grow px-20 pt-20">
+
+        <div class="relative w-full max-w-lg mb-10">
+            <input id="busqueda" type="text" placeholder="Buscar" class="w-full bg-black text-white rounded-full pl-10 py-2">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg class="text-white h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 18l6-6m0 0l-6-6m6 6H3"></path>
+                </svg>
+            </div>
+        </div>
+
         <h1 class="text-2xl font-bold mb-4">Tabla: <%= tableName %></h1>
         <table class="min-w-full bg-gray-100 border border-gray-300">
             <thead>
@@ -56,17 +66,30 @@
                             <% if (["report_status", "professor_likes", "comment_likes", "roles"].includes(tableName)) { %>
                                 <p class="text-500">No disponible</p>
                             <% } %>
-                            <% if (["users", "professor_subjects", "comments", "professors", "report_reasons"].includes(tableName)) { %>
+                            <% if (["users", "professor_subjects", "comments", "professors", "report_reasons", "subjects"].includes(tableName)) { %>
                                 <button class="text-blue-500 edit-btn">Editar</button>
                                 <button class="text-green-500 hidden save-btn" data-id="<%= row.id %>" data-table="<%= tableName %>">Guardar</button>
                             <% } %>
                             <% if (tableName === 'reports' && Number(row.status_id) === 3) { %>
                                 <button class="text-blue-500" onclick="updateStatus('<%= row.id %>')">Resolver</button>
                             <% } %>
-                            <% if (["users", "professor_subjects", "comments", "professors", "reports", "report_reasons", "subjects"].includes(tableName)) { %>
+                            <% if (["users", "professor_subjects", "comments", "professors", "reports", "report_reasons", "subjects", "professors_requests"].includes(tableName)) { %>
                                 <button class="text-red-500 ml-2 delete-btn" onclick="deleteCrud('<%= row.id %>', '<%= tableName %>')">Eliminar</button>
                                 <button class="text-gray-500 ml-2 hidden cancel-btn">Cancelar</button>
                             <% } %>
+                            <% if (tableName === "professors_requests") { %>
+                                
+                            <% if (row.status_id == 1) { %> <!-- Pending -->
+                                <button class="text-green-500 approve-btn" onclick="gestionarSolicitud('<%= row.id %>', 'approve')">Aprobar</button>
+                                <button class="text-red-500 reject-btn ml-2" onclick="gestionarSolicitud('<%= row.id %>', 'reject')">Rechazar</button>
+                            <% } else if (row.status_id == 2) { %>
+                                <span class="text-green-600 font-bold">Aprobado</span>
+                            <% } else if (row.status_id == 3) { %>
+                                <span class="text-red-600 font-bold">Rechazado</span>
+                            <% } %>
+                                
+                            <% } %>
+                            
                         </td>
                     </tr>
                 <% }) %>
@@ -104,12 +127,15 @@
                         <input class="p-4" type="<%= field.type %>" name="<%= field.name %>" placeholder="<%= field.placeholder %>" required>
                     <% }) %>
                 <% } %>
-            
+
+                <% if (["users", "professors", "subjects", "professor_subjects", "report_reasons"].includes(tableName)) { %>
                 <button type="submit" class="bg-green-500 text-white p-4 rounded">Agregar</button>
+                <% } %>
             </form>
         </div>
         
     </main>
     <script src='/js/cruds.js' ></script>
+    <script src='/js/agregar_maestro.js' ></script>
 </body>
 </html>

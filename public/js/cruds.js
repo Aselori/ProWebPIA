@@ -180,6 +180,23 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("busqueda");
+    
+    if (searchInput) {
+        searchInput.addEventListener("keyup", function () {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll("tbody tr");
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(searchValue) ? "" : "none";
+            });
+        });
+    }
+});
+
     
 
 
