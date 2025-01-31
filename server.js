@@ -135,6 +135,7 @@ app.post('/deleteCrud', async (req, res) => {
         'professors': 'id',
         'reports': 'id',
         'report_status': 'id',
+        'report_reasons': 'id',
         'subjects': 'id'
     };
 
