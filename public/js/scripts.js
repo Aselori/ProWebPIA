@@ -311,3 +311,60 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .catch(error => console.error("Error al obtener las solicitudes:", error));
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("button[id^='reportButton-']").forEach(button => {
+        const commentId = button.id.replace("reportButton-", ""); // Extraer ID correctamente
+        const menu = document.getElementById(`reportMenu-${commentId}`);
+
+        if (!menu) {
+            console.warn(`No se encontró el menú para el comentario ${commentId}`);
+            return;
+        }
+
+        button.addEventListener("click", function (event) {
+            event.stopPropagation(); // Evita que se cierre automáticamente
+            console.log(`Botón reportar clickeado para comentario: ${commentId}`);
+            menu.classList.toggle("hidden");
+        });
+
+        document.querySelectorAll(`#reportMenu-${commentId} .report-option`).forEach(option => {
+            option.addEventListener("click", function () {
+                const reasonId = this.dataset.reasonId;
+
+                console.log(`Enviando reporte de comentario ${commentId} con razón ${reasonId}`);
+
+                if (typeof usuarioId === "undefined" || usuarioId === 0) {
+                    alert("Debes iniciar sesión para reportar un comentario.");
+                    return;
+                }
+
+                fetch("/newReport", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: usuarioId, 
+                        comment_id: commentId, 
+                        reason: reasonId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Reporte enviado con éxito.");
+                        menu.classList.add("hidden");
+                    } else {
+                        alert("Error al enviar el reporte.");
+                    }
+                })
+                .catch(error => console.error("Error al reportar:", error));
+            });
+        });
+    });
+
+    // Cierra el menú al hacer clic en cualquier parte de la página
+    document.addEventListener("click", function () {
+        document.querySelectorAll("[id^='reportMenu-']").forEach(menu => menu.classList.add("hidden"));
+    });
+});
+

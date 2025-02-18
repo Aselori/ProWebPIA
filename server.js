@@ -315,6 +315,41 @@ app.get('/profileData', (req, res) => {
     res.json({ username: req.session.usuario.username });
 });
 
+app.post('/newReport', async (req, res) => {
+  if (!req.session.usuario || req.session.usuario.id === 0) {
+      return res.json({ success: false, message: "Debes iniciar sesión para enviar un reporte." });
+  }
+
+  const { comment_id, reason } = req.body;
+  const user_id = req.session.usuario.id;
+
+  try {
+      // Buscar el ID de status correspondiente a "pending"
+      const statusResult = await pool.query(
+          'SELECT id FROM report_status WHERE status_name = $1 LIMIT 1',
+          ['pending']
+      );
+
+      if (statusResult.rows.length === 0) {
+          return res.status(500).json({ success: false, message: "Error: No se encontró el estado 'pending' en report_status." });
+      }
+
+      const status_id = statusResult.rows[0].id; // Obtener el ID real de "pending"
+
+      await pool.query(
+          'INSERT INTO reports (user_id, comment_id, reason_id, status_id, created_at) VALUES ($1, $2, $3, $4, NOW())',
+          [user_id, comment_id, reason, status_id]
+      );
+
+      res.json({ success: true, message: "Reporte enviado con éxito." });
+  } catch (error) {
+      console.error("Error al insertar el reporte:", error);
+      res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+});
+
+
+
 
 app.post('/borrarComentario', async (req, res) => {
   const { commentID } = req.body;
@@ -470,29 +505,42 @@ app.post('/login_val', async (req, res) => {
 
 // Ruta de perfil del usuario
 app.get('/profile', async (req, res) => {
-  const usuario = req.session.usuario || { id: 0, nombre: '', role: 0 };
-  if (usuario.id === 0) {
+  if (!req.session.usuario || req.session.usuario.id === 0) {
     return res.redirect('/login');
   }
 
   try {
-    const result = await pool.query('SELECT * FROM obtener_comentarios_de_usuario($1)', [usuario.id]);
+    const usuario_id = req.session.usuario.id; // 💡 Definir correctamente usuario_id
+
+    // Obtener los comentarios del usuario
+    const result = await pool.query('SELECT * FROM obtener_comentarios_de_usuario($1)', [usuario_id]);
     const comentarios = result.rows.map(comentario => ({
       id: comentario.comment_id, 
+      profesor: comentario.profesor_nombre,
       materia: comentario.subject_nombre,
       contenido: comentario.contenido,
       likes: comentario.likes,
       dislikes: comentario.dislikes,
     }));
 
-    console.log("📌 Comentarios enviados a profile.ejs:", comentarios);
+    // Obtener razones de reporte
+    const reasonsResult = await pool.query('SELECT id, reason_name FROM report_reasons');
+    const report_reasons = reasonsResult.rows;
 
-    res.render('profile', { usuario, comentarios });
+    res.render('profile', { 
+      usuario: req.session.usuario, 
+      usuario_id, // 👈 Ahora se pasa correctamente
+      comentarios, 
+      report_reasons 
+    });
+
   } catch (error) {
-    console.error('Error al renderizar la pantalla del perfil del usuario:', error);
+    console.error('❌ Error al renderizar profile.ejs:', error);
     res.status(500).send('Error interno del servidor');
   }
 });
+
+
 
 
 
@@ -775,9 +823,17 @@ app.get('/perfil-profesor', async (req, res) => {
       id: profesor.id 
     };
 
-    const comentariosData = await pool.query('SELECT * FROM obtener_comentarios_de_profesor($1) ORDER BY likes DESC', [profesor.id]);
+    // Consulta para obtener las razones de reporte
+    const reasonsResult = await pool.query('SELECT id, reason_name FROM report_reasons');
+    const report_reasons = reasonsResult.rows; // Agregamos la lista de razones de reporte
+
+    const comentariosData = await pool.query(
+      'SELECT * FROM obtener_comentarios_de_profesor($1) ORDER BY likes DESC', 
+      [profesor.id]
+    );
+    
     const comentarios_profesor = comentariosData.rows.map(comentario => ({
-      id:comentario.id,
+      id: comentario.id,
       usuario: comentario.username,
       materia: comentario.subject_nombre,
       contenido: comentario.contenido,
@@ -793,13 +849,16 @@ app.get('/perfil-profesor', async (req, res) => {
       usuario_id: req.session.usuario?.id || 0, 
       comentarios: comentarios_profesor,
       likes,
-      dislikes
+      dislikes,
+      report_reasons // 🚀 Se envía la variable a la vista
     });
+
   } catch (error) {
     console.error('Error en la consulta:', error);
     res.status(500).send('Error interno del servidor');
   }
 });
+
 
 // Ruta para agregar un nuevo maestro
 app.get('/agregar-maestro', (req, res) => {

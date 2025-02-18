@@ -125,6 +125,20 @@
             <script>console.log("Comentario ID:", "<%= comentario.id %>");</script>
         
             <div class="p-6 mb-12 text-white bg-black border border-gray-300 rounded-lg shadow-md">
+              <div class="float-right">
+                <button id="reportButton-<%= comentario.id %>" class="h-5 w-5 flex">
+                  <svg viewBox="0 -0.5 21 21" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#FFFFFF" stroke="#FFFFFF"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>report_flag [#FFFFFF]</title> <desc>Created with Sketch.</desc> <defs> </defs> <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> <g id="Dribbble-Light-Preview" transform="translate(-59.000000, -640.000000)" fill="#FFFFFF"> <g id="icons" transform="translate(56.000000, 160.000000)"> <path d="M7.2,492 L24,492 L24,480 L7.2,480 L7.2,492 Z M3,500 L5.1,500 L5.1,480 L3,480 L3,500 Z" id="report_flag-[#FFFFFF]"> </path> </g> </g> </g> </g></svg>
+                </button>
+              </div>
+              <div id="reportMenu-<%= comentario.id %>" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50">
+                <% report_reasons.forEach(reason => { %>
+                    <button class="report-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" 
+                            data-comment-id="<%= comentario.id %>" 
+                            data-reason-id="<%= reason.id %>">
+                        <%= reason.reason_name %>
+                    </button>
+                <% }); %>
+            </div>
               <p class="text-xl mb-2"> <%= comentario.materia %></p>
               <p class="mb-4"><%= comentario.contenido %></p>
               <div class="flex items-center space-x-1 mt-2">
@@ -165,6 +179,7 @@
     <!-- Incluir el archivo de script externo -->
     <script src='/js/script_profesores.js'></script>
     <script src='/js/scripts.js'></script>
+    <script>const usuarioId = "<%= usuario_id %>";</script>
 
  </body>
  </html>
