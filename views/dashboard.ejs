@@ -6,33 +6,35 @@
     <title>Dashboard</title>
     <link href="/css/styles.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 flex h-[100vh]">
+<body class="bg-gray-100 flex">
 
     <!-- Sidebar -->
     <aside class="bg-black text-white w-64 pl-4 py-6">
+        <div class="h-[100vh]">
+            <div class="float-right mr-10">
+                <a href="/profile">
+                    <button class=" mb-2 mt-2 text-white flex items-center space-x-2">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 10L3.64645 10.3536L3.29289 10L3.64645 9.64645L4 10ZM20.5 18C20.5 18.2761 20.2761 18.5 20 18.5C19.7239 18.5 19.5 18.2761 19.5 18L20.5 18ZM8.64645 15.3536L3.64645 10.3536L4.35355 9.64645L9.35355 14.6464L8.64645 15.3536ZM3.64645 9.64645L8.64645 4.64645L9.35355 5.35355L4.35355 10.3536L3.64645 9.64645ZM4 9.5L14 9.5L14 10.5L4 10.5L4 9.5ZM20.5 16L20.5 18L19.5 18L19.5 16L20.5 16ZM14 9.5C17.5898 9.5 20.5 12.4101 20.5 16L19.5 16C19.5 12.9624 17.0376 10.5 14 10.5L14 9.5Z" fill="#222222"></path> </g>
+                        </svg>
+                    </button>
+                </a>
+            </div>
         <div class="text-3xl font-bold mb-6 pl-4 mt-4">FIME</div>
         <nav class="space-y-4">
             <% tables.forEach(table => { %>
-                <a href="/dashboard/<%= table %>" class="block py-2 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
+                <a href="/dashboard/<%= table %>" class="block py-1 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
             <% }) %>
         </nav>
-        <div class="mx-auto">
-            <a href="/profile">
-                <button class="mt-8 mb-2 ml-10 text-white flex items-center space-x-2">Atras 
-                    <svg class="h-4 w-4 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 10L3.64645 10.3536L3.29289 10L3.64645 9.64645L4 10ZM20.5 18C20.5 18.2761 20.2761 18.5 20 18.5C19.7239 18.5 19.5 18.2761 19.5 18L20.5 18ZM8.64645 15.3536L3.64645 10.3536L4.35355 9.64645L9.35355 14.6464L8.64645 15.3536ZM3.64645 9.64645L8.64645 4.64645L9.35355 5.35355L4.35355 10.3536L3.64645 9.64645ZM4 9.5L14 9.5L14 10.5L4 10.5L4 9.5ZM20.5 16L20.5 18L19.5 18L19.5 16L20.5 16ZM14 9.5C17.5898 9.5 20.5 12.4101 20.5 16L19.5 16C19.5 12.9624 17.0376 10.5 14 10.5L14 9.5Z" fill="#222222"></path> </g>
-                    </svg>
-                </button>
-            </a>
-        </div>
+    </div>
     </aside>
 
     <!-- Main Content -->
     <main class="flex-grow pt-10 px-20">
         <div class="bg-white p-6 rounded-lg shadow-lg mb-12 h-[50vh] w-full">
             <!-- Header with profile icon -->
-        <div class="flex items-center justify-end">           
+        <div class="float-right">           
             <!-- Profile icon -->
-            <a href="/profile" class="bg-gray-300 rounded-full h-12 w-12 flex items-center justify-center ml-4">
+            <a href="/profile" class="bg-gray-300 rounded-full h-12 w-12 flex items-center justify-center">
                 <!-- Profile Icon -->
                 <svg fill="#000000" height="30px" width="30px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
                     viewBox="0 0 482.9 482.9" xml:space="preserve">
@@ -63,24 +65,24 @@
         </div>
 
         <!-- Dashboard Content -->
-        <div class="grid grid-cols-3 gap-8">
-            <div class="bg-black text-white p-8 rounded shadow">
+        <div class="grid grid-cols-3 gap-2">
+            <div class="bg-black text-white p-6 rounded shadow">
                 <h3 class="text-xl font-bold">USUARIOS</h3>
                 <p class="text-3xl mt-4"><%= datosDashboard.totalUsuarios %></p>
             </div>
-            <div class="bg-black text-white p-8 rounded shadow">
-                <h3 class="text-xl font-bold">MAESTROS</h3>
+            <div class="bg-black text-white p-6 rounded shadow">
+                <h3 class="text-xl font-bold">PROFESORES</h3>
                 <p class="text-3xl mt-4"><%= datosDashboard.totalMaestros %></p>
             </div>
-            <div class="bg-black text-white p-8 rounded shadow">
+            <div class="bg-black text-white p-6 rounded shadow">
                 <h3 class="text-xl font-bold">MATERIAS</h3>
                 <p class="text-3xl mt-4"><%= datosDashboard.totalMaterias %></p>
             </div>
-            <div class="bg-black text-white p-8 rounded shadow">
+            <div class="bg-black text-white p-6 rounded shadow">
                 <h3 class="text-xl font-bold">REPORTES</h3>
                 <p class="text-3xl mt-4"><%= datosDashboard.totalReportes %></p>
             </div>
-            <div class="bg-black text-white p-8 rounded shadow">
+            <div class="bg-black text-white p-6 rounded shadow">
                 <h3 class="text-xl font-bold">COMENTARIOS</h3>
                 <p class="text-3xl mt-4"><%= datosDashboard.totalComentarios %></p>
             </div>
