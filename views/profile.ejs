@@ -32,7 +32,7 @@
             <script>console.log("Comentario ID en profile.ejs:", "<%- comentario.id %>");</script>                     
         
             <div class="p-6 mb-12 text-white bg-black border border-gray-300 rounded-lg shadow-md">
-                <p class="text-xl mb-2"><%= comentario.materia %></p>
+                <p class="text-xl mb-2"><%= comentario.profesor%> - <%= comentario.materia%></p>            
                 <p class="mb-4"><%= comentario.contenido %></p>
                 <div class="flex items-center space-x-1 mt-2">
                     <!-- Botón de Like -->

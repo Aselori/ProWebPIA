@@ -33,16 +33,32 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
   const user_id = req.session.usuario.id;
 
   try {
+      // Contar cuántas solicitudes ha hecho el usuario hoy
+      const { rows } = await pool.query(
+          `SELECT COUNT(*) AS total FROM professors_requests 
+          WHERE user_id = $1 AND created_at::DATE = CURRENT_DATE`,
+          [user_id]
+      );
+
+      if (parseInt(rows[0].total, 10) >= 5) {
+          return res.status(400).json({ success: false, message: 'Has alcanzado el límite de 5 solicitudes por día.' });
+      }
+
+      // Insertar la nueva solicitud si aún no ha alcanzado el límite
       await pool.query(
-          `INSERT INTO professors_requests (first_name, last_name, user_id, status_id) VALUES ($1, $2, $3, 1)`, // <-- Asegurar que se inserta con "pending"
+          `INSERT INTO professors_requests (first_name, last_name, user_id, status_id, created_at) 
+          VALUES ($1, $2, $3, 1, NOW())`, // Se asegura de que la solicitud tenga estado "pending" y la fecha actual
           [first_name, last_name, user_id]
       );
+
       res.json({ success: true, message: 'Solicitud enviada correctamente.' });
+
   } catch (error) {
       console.error('Error al enviar la solicitud:', error);
       res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 });
+
 
 
 // RUTA PARA QUE ADMINISTRADORES VEAN SOLICITUDES
@@ -52,7 +68,7 @@ app.get('/solicitudes-maestro', async (req, res) => {
   }
 
   try {
-      const solicitudes = await pool.query(`SELECT * FROM professors_requests WHERE status = 'pending'`);
+      const solicitudes = await pool.query(`SELECT * FROM professors_requests WHERE status_id = 1`);
       res.json({ success: true, solicitudes: solicitudes.rows });
   } catch (error) {
       console.error('Error al obtener las solicitudes:', error);
@@ -462,8 +478,7 @@ app.get('/profile', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM obtener_comentarios_de_usuario($1)', [usuario.id]);
     const comentarios = result.rows.map(comentario => ({
-      id: comentario.comment_id,  // 🔴 Antes: comentario.id | ✅ Ahora: comentario.comment_id
-      profesor: comentario.profesor_nombre,
+      id: comentario.comment_id, 
       materia: comentario.subject_nombre,
       contenido: comentario.contenido,
       likes: comentario.likes,
@@ -523,7 +538,7 @@ app.get('/dashboard/:tableName', async (req, res) => {
 
   try {
       // Obtener todas las tablas disponibles en la base de datos
-      const resultTables = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public'");
+      const resultTables = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename ASC");
       const tables = resultTables.rows.map(row => row.tablename);
 
       // Verificar si la tabla solicitada existe en la base de datos
