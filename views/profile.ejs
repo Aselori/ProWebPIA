@@ -28,14 +28,8 @@
             </div>
         </div>
 
-        <% comentarios.forEach(comentario => { %>
-            <script>
-            console.log("Comentario ID en profile.ejs:", "<%- comentario.id %>");
-            console.log("📌 Razones de reporte en profile.ejs:", "<%= JSON.stringify(report_reasons) %>");
-            </script>  
-            
-                   
-        
+        <% if (comentarios.length > 0) { %>
+        <% comentarios.forEach(comentario => { %>                
             <div class="p-6 mb-12 text-white bg-black border border-gray-300 rounded-lg shadow-md">
                 <div class="float-right">
                     <button id="reportButton-<%= comentario.id %>" class="h-5 w-5 flex">
@@ -90,9 +84,10 @@
                 </div>
             </div>
         <% }) %>
-        
-            
-            
+    <% } else { %>
+        <p class="text-center text-gray-500">No existen comentarios</p>
+    <% } %>
+                  
         </div>
     </main>
 

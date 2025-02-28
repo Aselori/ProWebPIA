@@ -6,7 +6,7 @@ const { Pool } = pkg;
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
-    database: 'postgres',
+    database: 'FimeCoach',
     password: '123',
     port: 5433,
 });

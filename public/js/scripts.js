@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     button.classList.add('active');
                 }
             } else {
-                alert('Hubo un problema al registrar tu acción.');
+                alert('Necesitas iniciar sesión.');
             }
         })
         .catch(error => console.error('Error al procesar la acción:', error));
@@ -367,4 +367,3 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("[id^='reportMenu-']").forEach(menu => menu.classList.add("hidden"));
     });
 });
-

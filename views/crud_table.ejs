@@ -7,27 +7,10 @@
     <link href="/css/styles.css" rel="stylesheet"> 
 </head>
 <body class="bg-gray-100 flex">
-    <aside class="bg-black text-white w-64 pl-4 py-6">
-        <div class="h-[100vh]">
-            <div class="float-right mr-10">
-                <a href="/dashboard">
-                    <button class=" mb-2 mt-2 text-white flex items-center space-x-2">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M4 10L3.64645 10.3536L3.29289 10L3.64645 9.64645L4 10ZM20.5 18C20.5 18.2761 20.2761 18.5 20 18.5C19.7239 18.5 19.5 18.2761 19.5 18L20.5 18ZM8.64645 15.3536L3.64645 10.3536L4.35355 9.64645L9.35355 14.6464L8.64645 15.3536ZM3.64645 9.64645L8.64645 4.64645L9.35355 5.35355L4.35355 10.3536L3.64645 9.64645ZM4 9.5L14 9.5L14 10.5L4 10.5L4 9.5ZM20.5 16L20.5 18L19.5 18L19.5 16L20.5 16ZM14 9.5C17.5898 9.5 20.5 12.4101 20.5 16L19.5 16C19.5 12.9624 17.0376 10.5 14 10.5L14 9.5Z" fill="#222222"></path> </g>
-                        </svg>
-                    </button>
-                </a>
-            </div>
-        <div class="text-3xl font-bold mb-6 pl-4 mt-4">FIME</div>
-        <nav class="space-y-4">
-            <% tables.forEach(table => { %>
-                <a href="/dashboard/<%= table %>" class="block py-1 px-4 rounded hover:bg-gray-700"><%= table.toUpperCase() %></a>
-            <% }) %>
-        </nav>
-    </div>
-    </aside>
+   
+    <%- include('partials/aside') %> 
 
-
-    <main class="flex-grow px-20 pt-20">
+    <main class="flex-grow px-20 py-10">
 
         <div class="relative w-full max-w-lg mb-10">
             <input id="busqueda" type="text" placeholder="Buscar" class="w-full bg-black text-white rounded-full pl-10 py-2">
@@ -39,6 +22,42 @@
         </div>
 
         <h1 class="text-2xl font-bold mb-4">Tabla: <%= tableName %></h1>
+        <div class="mt-10">
+            <form action="/dashboard/<%= tableName %>/add" method="POST" class="mb-4">
+                <% const fieldConfigs = {
+                    users: [
+                        { type: "text", name: "username", placeholder: "Nombre de usuario" },
+                        { type: "email", name: "email", placeholder: "Correo electrónico" },
+                        { type: "password", name: "password", placeholder: "Contraseña" },
+                        { type: "number", name: "role_id", placeholder: "Rol (ej. 2 para usuario)" }
+                    ],
+                    professors: [
+                        { type: "text", name: "first_name", placeholder: "Nombre" },
+                        { type: "text", name: "last_name", placeholder: "Apellido" }
+                    ],
+                    subjects: [
+                        { type: "text", name: "name", placeholder: "Nombre de la materia" }
+                    ],
+                    professor_subjects: [
+                        { type: "number", name: "professor_id", placeholder: "ID del Profesor" },
+                        { type: "number", name: "subject_id", placeholder: "ID de la Materia" }
+                    ],
+                    report_reasons: [
+                        { type: "text", name: "reason_name", placeholder: "Descripción del motivo" }
+                    ]
+                }[tableName]; %>
+            
+                <% if (fieldConfigs) { %>
+                    <% fieldConfigs.forEach(field => { %>
+                        <input class="p-4" type="<%= field.type %>" name="<%= field.name %>" placeholder="<%= field.placeholder %>" required>
+                    <% }) %>
+                <% } %>
+
+                <% if (["users", "professors", "subjects", "professor_subjects", "report_reasons"].includes(tableName)) { %>
+                <button type="submit" class="bg-green-500 text-white p-4 rounded">Agregar</button>
+                <% } %>
+            </form>
+        </div>
         <table class="min-w-full bg-gray-100 border border-gray-300">
             <thead>
                 <tr>
@@ -100,42 +119,6 @@
             
             
         </table>
-        <div class="mt-10">
-            <form action="/dashboard/<%= tableName %>/add" method="POST" class="mb-4">
-                <% const fieldConfigs = {
-                    users: [
-                        { type: "text", name: "username", placeholder: "Nombre de usuario" },
-                        { type: "email", name: "email", placeholder: "Correo electrónico" },
-                        { type: "password", name: "password", placeholder: "Contraseña" },
-                        { type: "number", name: "role_id", placeholder: "Rol (ej. 2 para usuario)" }
-                    ],
-                    professors: [
-                        { type: "text", name: "first_name", placeholder: "Nombre" },
-                        { type: "text", name: "last_name", placeholder: "Apellido" }
-                    ],
-                    subjects: [
-                        { type: "text", name: "name", placeholder: "Nombre de la materia" }
-                    ],
-                    professor_subjects: [
-                        { type: "number", name: "professor_id", placeholder: "ID del Profesor" },
-                        { type: "number", name: "subject_id", placeholder: "ID de la Materia" }
-                    ],
-                    report_reasons: [
-                        { type: "text", name: "reason_name", placeholder: "Descripción del motivo" }
-                    ]
-                }[tableName]; %>
-            
-                <% if (fieldConfigs) { %>
-                    <% fieldConfigs.forEach(field => { %>
-                        <input class="p-4" type="<%= field.type %>" name="<%= field.name %>" placeholder="<%= field.placeholder %>" required>
-                    <% }) %>
-                <% } %>
-
-                <% if (["users", "professors", "subjects", "professor_subjects", "report_reasons"].includes(tableName)) { %>
-                <button type="submit" class="bg-green-500 text-white p-4 rounded">Agregar</button>
-                <% } %>
-            </form>
-        </div>
         
     </main>
     <script src='/js/cruds.js' ></script>

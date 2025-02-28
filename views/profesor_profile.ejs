@@ -119,8 +119,9 @@
           <input type="hidden" id="usuario-id" value="<%= usuario_id %>">
           <input type="hidden" id="profesor-id" value="<%= profesor.id %>">
         
-        <!-- Comentarios anteriores -->
+        
         <div class="pt-10">
+          <% if (comentarios.length > 0) { %>
           <% comentarios.forEach(comentario => { %>
             <script>console.log("Comentario ID:", "<%= comentario.id %>");</script>
         
@@ -173,7 +174,10 @@
               </div>
             </div>
           <% }) %>
-        </div>
+      <% } else { %>
+        <p class="text-center text-gray-500">No existen comentarios</p>
+      <% } %>
+      </div>
     </main>
 
     <!-- Incluir el archivo de script externo -->
