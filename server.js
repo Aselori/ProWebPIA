@@ -19,10 +19,25 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-  secret: '123',
-  resave: false,
-  saveUninitialized: false,
+    secret: 'clave-super-segura', // Cambia esto por una clave segura
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: false, // Cámbialo a true si usas HTTPS
+        maxAge: 1000 * 60 * 60 * 24 // 1 día de duración
+    }
 }));
+
+
+app.get('/check-session', (req, res) => {
+  console.log("Sesión actual en el servidor:", req.session);
+  if (!req.session.userId) {
+      return res.json({ success: false, message: "No hay sesión activa" });
+  }
+  return res.json({ success: true, userId: req.session.userId });
+});
+
 
 app.post('/nueva-solicitud-maestro', async (req, res) => {
   if (!req.session.usuario || req.session.usuario.id === 0) {
@@ -30,13 +45,13 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
   }
 
   const { first_name, last_name } = req.body;
-  const user_id = req.session.usuario.id;
+  const userId = req.session.usuario.id; // ✅ Se mantiene la forma correcta de obtenerlo
 
   try {
     const { rows } = await pool.query(
       `SELECT COUNT(*) AS total FROM professors_requests
       WHERE user_id = $1 AND created_at::DATE = CURRENT_DATE`,
-      [user_id]
+      [userId] // ✅ Se usa `userId` correctamente
     );
 
     if (parseInt(rows[0].total, 10) >= 5) {
@@ -46,7 +61,7 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
     await pool.query(
       `INSERT INTO professors_requests (first_name, last_name, user_id, status_id, created_at)
       VALUES ($1, $2, $3, 1, NOW())`,
-      [first_name, last_name, user_id]
+      [first_name, last_name, userId] // ✅ Se usa `userId` correctamente
     );
 
     res.json({ success: true, message: 'Solicitud enviada correctamente.' });
@@ -56,6 +71,7 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error interno del servidor.' });
   }
 });
+
 
 app.get('/solicitudes-maestro', async (req, res) => {
   if (!req.session.usuario || req.session.usuario.role !== 1) {
@@ -600,12 +616,78 @@ app.post('/dashboard/:tableName/add', async (req, res) => {
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
 
     await pool.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *;`, values);
-    res.redirect(`/dashboard/${tableName}?message=Registro agregado correctamente`);
+    res.redirect(`/dashboard/${tableName}`);
   } catch (error) {
     console.error(`Error al insertar en ${tableName}:`, error);
     res.redirect(`/dashboard/${tableName}?message=Error al agregar registro`);
   }
 });
+
+app.get('/comment-likes-status', async (req, res) => {
+  console.log("Sesión al obtener likes de comentarios:", req.session);
+
+  const { commentId } = req.query;
+  const userId = req.session.usuario?.id; // ✅ Ahora obtiene correctamente el ID del usuario
+
+  if (!userId) {
+      console.log("⚠ Usuario no autenticado en /comment-likes-status");
+      return res.status(401).json({ success: false, message: "Usuario no autenticado" });
+  }
+
+  try {
+      const result = await pool.query(
+          'SELECT is_like FROM comment_likes WHERE user_id = $1 AND comment_id = $2 LIMIT 1',
+          [userId, commentId]
+      );
+
+      if (result.rows.length > 0) {
+          return res.json({ success: true, hasLiked: result.rows[0].is_like });
+      } else {
+          return res.json({ success: true, hasLiked: null });
+      }
+  } catch (error) {
+      console.error("Error en /comment-likes-status:", error);
+      return res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+
+
+
+app.get('/professor-likes-status', async (req, res) => {
+  const { profesorId } = req.query; // O "professorId", según uses
+  if (!profesorId) {
+    return res.json({ success: false, message: 'No se recibió profesorId.' });
+  }
+
+  // Si no hay sesión iniciada, respondemos hasLiked = null (sin like/dislike).
+  if (!req.session.usuario || req.session.usuario.id === 0) {
+    return res.json({ success: true, hasLiked: null });
+  }
+
+  try {
+    // Ver si existe un registro en professor_likes de este user+professor.
+    const result = await pool.query(`
+      SELECT is_like
+      FROM professor_likes
+      WHERE user_id = $1
+        AND professor_id = $2
+      LIMIT 1
+    `, [req.session.usuario.id, profesorId]);
+
+    if (result.rows.length > 0) {
+      // El usuario ya dio like (true) o dislike (false).
+      return res.json({ success: true, hasLiked: result.rows[0].is_like });
+    } else {
+      // Nunca le ha dado like ni dislike => null
+      return res.json({ success: true, hasLiked: null });
+    }
+  } catch (error) {
+    console.error('Error en GET /professor-likes-status:', error);
+    return res.json({ success: false, message: 'Error interno del servidor.' });
+  }
+});
+
 
 app.post('/like-dislike', async (req, res) => {
   const { profesorId, isLike } = req.body;
@@ -675,9 +757,12 @@ app.post('/like-dislike-comment', async (req, res) => {
 });
 
 app.get('/perfil-profesor', async (req, res) => {
-  const query = req.query.q?.toLowerCase();
-  if (!query) {
-    return res.status(400).send('Consulta inválida');
+  console.log("📥 Parámetro recibido en /perfil-profesor:", req.query.q);
+  const query = req.query.q?.trim().toLowerCase();
+
+  if (!query || query === '') { 
+    console.error('❌ No se recibió un parámetro válido en la consulta');
+    return res.redirect('/');
   }
 
   try {
@@ -794,28 +879,32 @@ app.get('/faq', (req, res) => {
 });
 
 app.post('/post_comentario', async (req, res) => {
+  console.log("🔍 Headers recibidos:", req.headers);
+  console.log("🔍 Datos recibidos en /post_comentario:", req.body);
+  
   const { profesorId, usuarioId, materia, comentario } = req.body;
 
   if (!req.session.usuario || req.session.usuario.id === 0) {
-    return res.json({ success: false, message: 'Debes iniciar sesión para enviar un comentario.' });
+      return res.json({ success: false, message: 'Debes iniciar sesión para enviar un comentario.' });
   }
 
   if (!profesorId || !usuarioId || !materia || !comentario) {
-    return res.json({ success: false, message: 'Todos los campos son obligatorios.' });
+      return res.json({ success: false, message: 'Todos los campos son obligatorios.' });
   }
 
   try {
-    await pool.query(
-      `INSERT INTO comments (user_id, professor_id, subject_id, content, created_at, is_enabled)
-       VALUES ($1, $2, (SELECT id FROM subjects WHERE name = $3 LIMIT 1), $4, NOW(), true)`,
-      [usuarioId, profesorId, materia, comentario]
-    );
-    res.json({ success: true, message: 'Comentario enviado con éxito.' });
+      await pool.query(
+          `INSERT INTO comments (user_id, professor_id, subject_id, content, created_at, is_enabled)
+           VALUES ($1, $2, (SELECT id FROM subjects WHERE name = $3 LIMIT 1), $4, NOW(), true)`,
+          [usuarioId, profesorId, materia, comentario]
+      );
+      res.json({ success: true, message: 'Comentario enviado con éxito.' });
   } catch (error) {
-    console.error('Error al insertar el comentario:', error);
-    res.json({ success: false, message: 'Error al enviar el comentario.' });
+      console.error('❌ Error al insertar el comentario:', error);
+      res.json({ success: false, message: 'Error al enviar el comentario.' });
   }
 });
+
 
 app.get('/header', (req, res) => {
   res.render('header', { usuario: req.session.usuario || null });
