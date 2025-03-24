@@ -83,7 +83,7 @@
                     if (dislikeCountEl) dislikeCountEl.textContent = data.newDislikes;
 
                     // Actualizar interfaz
-                    updateCommentLikeUI(commentId, true);
+                    updateCommentLikeUI(commentId, data.currentStatus);
                 } else {
                     alert(data.message || "Debes iniciar sesión para dar like/dislike");
                 }
@@ -101,7 +101,7 @@
                     if (dislikeCountEl) dislikeCountEl.textContent = data.newDislikes;
 
                     // Actualizar interfaz
-                    updateCommentLikeUI(commentId, false);
+                    updateCommentLikeUI(commentId, data.currentStatus);
                 } else {
                     alert(data.message || "Debes iniciar sesión para dar like/dislike");
                 }

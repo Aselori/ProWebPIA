@@ -45,13 +45,13 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
   }
 
   const { first_name, last_name } = req.body;
-  const userId = req.session.usuario.id; // ✅ Se mantiene la forma correcta de obtenerlo
+  const userId = req.session.usuario.id; // Se mantiene la forma correcta de obtenerlo
 
   try {
     const { rows } = await pool.query(
       `SELECT COUNT(*) AS total FROM professors_requests
       WHERE user_id = $1 AND created_at::DATE = CURRENT_DATE`,
-      [userId] // ✅ Se usa `userId` correctamente
+      [userId] // Se usa `userId` correctamente
     );
 
     if (parseInt(rows[0].total, 10) >= 5) {
@@ -61,7 +61,7 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
     await pool.query(
       `INSERT INTO professors_requests (first_name, last_name, user_id, status_id, created_at)
       VALUES ($1, $2, $3, 1, NOW())`,
-      [first_name, last_name, userId] // ✅ Se usa `userId` correctamente
+      [first_name, last_name, userId] // Se usa `userId` correctamente
     );
 
     res.json({ success: true, message: 'Solicitud enviada correctamente.' });
@@ -627,7 +627,7 @@ app.get('/comment-likes-status', async (req, res) => {
   console.log("Sesión al obtener likes de comentarios:", req.session);
 
   const { commentId } = req.query;
-  const userId = req.session.usuario?.id; // ✅ Ahora obtiene correctamente el ID del usuario
+  const userId = req.session.usuario?.id; // Ahora obtiene correctamente el ID del usuario
 
   if (!userId) {
       console.log("⚠ Usuario no autenticado en /comment-likes-status");
@@ -691,36 +691,56 @@ app.get('/professor-likes-status', async (req, res) => {
 
 app.post('/like-dislike', async (req, res) => {
   const { profesorId, isLike } = req.body;
+  const userId = req.session.usuario?.id;
 
-  if (!req.session.usuario || req.session.usuario.id === 0) {
+  if (!userId) {
     return res.json({ success: false, message: 'Debes iniciar sesión para realizar esta acción.' });
   }
 
   try {
-    await pool.query(`
-      INSERT INTO professor_likes (user_id, professor_id, is_like)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (user_id, professor_id)
-      DO UPDATE SET is_like = $3;
-    `, [req.session.usuario.id, profesorId, isLike]);
+    const existing = await pool.query(
+      `SELECT is_like FROM professor_likes WHERE user_id = $1 AND professor_id = $2`,
+      [userId, profesorId]
+    );
 
-    const likeResult = await pool.query(`
+    if (existing.rows.length > 0 && existing.rows[0].is_like === isLike) {
+      // Toggle a neutro → borrar registro
+      await pool.query(
+        `DELETE FROM professor_likes WHERE user_id = $1 AND professor_id = $2`,
+        [userId, profesorId]
+      );
+    } else {
+      // Insertar o actualizar
+      await pool.query(
+        `INSERT INTO professor_likes (user_id, professor_id, is_like)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, professor_id)
+         DO UPDATE SET is_like = $3`,
+        [userId, profesorId, isLike]
+      );
+    }
+
+    const result = await pool.query(`
       SELECT
         COUNT(*) FILTER (WHERE is_like = true) AS likes,
         COUNT(*) FILTER (WHERE is_like = false) AS dislikes
       FROM professor_likes
-      WHERE professor_id = $1;
+      WHERE professor_id = $1
     `, [profesorId]);
 
-    const newLikes = likeResult.rows[0].likes || 0;
-    const newDislikes = likeResult.rows[0].dislikes || 0;
+    res.json({
+      success: true,
+      newLikes: result.rows[0].likes || 0,
+      newDislikes: result.rows[0].dislikes || 0,
+      currentStatus: (existing.rows.length > 0 && existing.rows[0].is_like === isLike) ? null : isLike
+    });
 
-    res.json({ success: true, newLikes, newDislikes });
   } catch (error) {
-    console.error('Error al manejar la acción de like/dislike:', error);
-    res.json({ success: false, message: 'Error al manejar la acción.' });
+    console.error('Error al manejar like/dislike:', error);
+    res.json({ success: false, message: 'Error al procesar la acción.' });
   }
 });
+
 
 app.post('/like-dislike-comment', async (req, res) => {
   const { commentId, isLike } = req.body;
@@ -733,23 +753,50 @@ app.post('/like-dislike-comment', async (req, res) => {
     return res.status(401).json({ success: false, message: '❌ Debes iniciar sesión para realizar esta acción.' });
   }
 
-  try {
-    await pool.query(`
-      INSERT INTO comment_likes (user_id, comment_id, is_like)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (user_id, comment_id)
-      DO UPDATE SET is_like = $3;
-    `, [req.session.usuario.id, parseInt(commentId, 10), isLike]);
+  const userId = req.session.usuario.id;
 
-    const likeResult = await pool.query(`
+  try {
+    const existing = await pool.query(
+      `SELECT is_like FROM comment_likes WHERE user_id = $1 AND comment_id = $2`,
+      [userId, commentId]
+    );
+
+    let currentStatus;
+
+    if (existing.rows.length > 0 && existing.rows[0].is_like === isLike) {
+      // Repite la acción, eliminar
+      await pool.query(
+        `DELETE FROM comment_likes WHERE user_id = $1 AND comment_id = $2`,
+        [userId, commentId]
+      );
+      currentStatus = null;
+    } else {
+      // Insertar o actualizar
+      await pool.query(`
+        INSERT INTO comment_likes (user_id, comment_id, is_like)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, comment_id)
+        DO UPDATE SET is_like = $3
+      `, [userId, commentId, isLike]);
+      currentStatus = isLike;
+    }
+
+    // Obtener conteo actualizado
+    const result = await pool.query(`
       SELECT
         COUNT(*) FILTER (WHERE is_like = true) AS likes,
         COUNT(*) FILTER (WHERE is_like = false) AS dislikes
       FROM comment_likes
-      WHERE comment_id = $1;
-    `, [parseInt(commentId, 10)]);
+      WHERE comment_id = $1
+    `, [commentId]);
 
-    res.json({ success: true, newLikes: likeResult.rows[0].likes || 0, newDislikes: likeResult.rows[0].dislikes || 0 });
+    res.json({
+      success: true,
+      newLikes: result.rows[0].likes || 0,
+      newDislikes: result.rows[0].dislikes || 0,
+      currentStatus
+    });
+
   } catch (error) {
     console.error("❌ Error en /like-dislike-comment:", error);
     res.status(500).json({ success: false, message: "Error interno del servidor" });

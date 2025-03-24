@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     alert("Ese nombre de usuario ya está en uso. Prueba con otro.");
                 } else if (response.ok) {
                     alert(result.message);
-                    setTimeout(() => { location.reload(); }, 500); // ✅ RECARGA LA PÁGINA
+                    setTimeout(() => { location.reload(); }, 500); // RECARGA LA PÁGINA
                 } else {
                     alert("Error: " + result.message);
                 }

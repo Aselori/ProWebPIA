@@ -57,7 +57,7 @@
                         if (data.success) {
                             if (likesSpanSingle) likesSpanSingle.textContent = data.newLikes;
                             if (dislikesSpanSingle) dislikesSpanSingle.textContent = data.newDislikes;
-                            updateSingleProfessorUI(true);
+                            updateSingleProfessorUI(data.currentStatus);
                         } else {
                             alert(data.message || "Debes iniciar sesión para dar like/dislike");
                         }
@@ -71,7 +71,7 @@
                         if (data.success) {
                             if (likesSpanSingle) likesSpanSingle.textContent = data.newLikes;
                             if (dislikesSpanSingle) dislikesSpanSingle.textContent = data.newDislikes;
-                            updateSingleProfessorUI(false);
+                            updateSingleProfessorUI(data.currentStatus);
                         } else {
                             alert(data.message || "Debes iniciar sesión para dar like/dislike");
                         }
@@ -127,16 +127,25 @@
                             alert(data.message || 'Debes iniciar sesión para dar like/dislike');
                             return;
                         }
+                
                         const likeCountEl = document.querySelector(`.like-count[data-profesor-id="${professorId}"]`);
                         const dislikeCountEl = document.querySelector(`.dislike-count[data-profesor-id="${professorId}"]`);
                         if (likeCountEl) likeCountEl.textContent = data.newLikes;
                         if (dislikeCountEl) dislikeCountEl.textContent = data.newDislikes;
-
-                        likeBtn.innerHTML = likedSvg;
+                
                         const dBtn = document.querySelector(`.dislike-button[data-profesor-id="${professorId}"]`);
-                        if (dBtn) dBtn.innerHTML = neutralDislikeSvg;
+                
+                        if (data.currentStatus === true) {
+                            likeBtn.innerHTML = likedSvg;
+                            if (dBtn) dBtn.innerHTML = neutralDislikeSvg;
+                        } else {
+                            likeBtn.innerHTML = neutralLikeSvg;
+                            if (dBtn) dBtn.innerHTML = neutralDislikeSvg;
+                        }
                     });
                 }
+                
+             
 
                 if (dislikeBtn) {
                     const professorId = dislikeBtn.dataset.profesorId;
@@ -145,16 +154,24 @@
                             alert(data.message || 'Debes iniciar sesión para dar like/dislike');
                             return;
                         }
+                
                         const likeCountEl = document.querySelector(`.like-count[data-profesor-id="${professorId}"]`);
                         const dislikeCountEl = document.querySelector(`.dislike-count[data-profesor-id="${professorId}"]`);
                         if (likeCountEl) likeCountEl.textContent = data.newLikes;
                         if (dislikeCountEl) dislikeCountEl.textContent = data.newDislikes;
-
-                        dislikeBtn.innerHTML = dislikedSvg;
+                
                         const lBtn = document.querySelector(`.like-button[data-profesor-id="${professorId}"]`);
-                        if (lBtn) lBtn.innerHTML = neutralLikeSvg;
+                
+                        if (data.currentStatus === false) {
+                            dislikeBtn.innerHTML = dislikedSvg;
+                            if (lBtn) lBtn.innerHTML = neutralLikeSvg;
+                        } else {
+                            dislikeBtn.innerHTML = neutralDislikeSvg;
+                            if (lBtn) lBtn.innerHTML = neutralLikeSvg;
+                        }
                     });
                 }
+                
             });
         }
     });

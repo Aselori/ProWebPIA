@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("✅ scripts.js ha sido cargado correctamente.");
+    console.log("scripts.js ha sido cargado correctamente.");
 
     // Campo de búsqueda
     const busquedaInput = document.getElementById('busqueda');
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div.innerHTML = `
                         <div class="solicitud-item">
                             <p><strong>${solicitud.first_name} ${solicitud.last_name}</strong></p>
-                            <button onclick="gestionarSolicitud(${solicitud.id}, 'approve')">✅ Aprobar</button>
+                            <button onclick="gestionarSolicitud(${solicitud.id}, 'approve')">Aprobar</button>
                             <button onclick="gestionarSolicitud(${solicitud.id}, 'reject')">❌ Rechazar</button>
                         </div>`;
                     solicitudesContainer.appendChild(div);
@@ -176,8 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                alert(`✅ Reporte enviado: ${data.message}`);
-                console.log("✅ Respuesta del servidor:", data);
+                alert(`Reporte enviado: ${data.message}`);
+                console.log("Respuesta del servidor:", data);
             })
             .catch(error => console.error("❌ Error al enviar el reporte:", error));
         }
