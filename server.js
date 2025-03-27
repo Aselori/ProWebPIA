@@ -262,6 +262,7 @@ app.post('/cambiarNombre', async (req, res) => {
   }
 
   try {
+    // Verificar si el nuevo nombre ya está en uso
     const checkUser = await pool.query(
       'SELECT id FROM users WHERE username = $1 AND id != $2',
       [newName, userId]
@@ -271,6 +272,7 @@ app.post('/cambiarNombre', async (req, res) => {
       return res.status(409).json({ message: "El nombre de usuario ya está en uso." });
     }
 
+    // Actualizar el nombre de usuario en la base de datos
     const result = await pool.query(
       'UPDATE users SET username = $1 WHERE id = $2 RETURNING *',
       [newName, userId]
@@ -280,7 +282,7 @@ app.post('/cambiarNombre', async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado." });
     }
 
-    req.session.usuario.username = newName;
+    req.session.usuario.username = newName; // Actualizamos la sesión
     req.session.save(err => {
       if (err) {
         console.error("Error al guardar la sesión:", err);

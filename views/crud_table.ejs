@@ -103,14 +103,14 @@
                                 <button class="text-blue-500" onclick="updateStatus('<%= row.id %>')">Resolver</button>
                             <% } %>
                             <% if (["users", "professor_subjects", "comments", "professors", "reports", "report_reasons", "subjects", "professors_requests"].includes(tableName)) { %>
-                                <button class="text-red-500 ml-2 delete-btn" onclick="deleteCrud('<%= row.id %>', '<%= tableName %>')">Eliminar</button>
-                                <button class="text-gray-500 ml-2 hidden cancel-btn">Cancelar</button>
+                                <button class="text-red-500 delete-btn" onclick="deleteCrud('<%= row.id %>', '<%= tableName %>')">Eliminar</button>
+                                <button class="text-gray-500 hidden cancel-btn">Cancelar</button>
                             <% } %>
                             <% if (tableName === "professors_requests") { %>
                                 
                             <% if (row.status_id == 1) { %> <!-- Pending -->
                                 <button class="text-green-500 approve-btn" onclick="gestionarSolicitud('<%= row.id %>', 'approve')">Aprobar</button>
-                                <button class="text-red-500 reject-btn ml-2" onclick="gestionarSolicitud('<%= row.id %>', 'reject')">Rechazar</button>
+                                <button class="text-red-500 reject-btn" onclick="gestionarSolicitud('<%= row.id %>', 'reject')">Rechazar</button>
                             <% } else if (row.status_id == 2) { %>
                                 <span class="text-green-600 font-bold">Aprobado</span>
                             <% } else if (row.status_id == 3) { %>
