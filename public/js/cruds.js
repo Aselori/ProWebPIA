@@ -1,4 +1,4 @@
-async function updateStatus(reportId) {
+async function updateReportStatus(reportId) {
     try {
         const response = await fetch('/updateStatus', {
             method: 'POST',
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const span = td.querySelector('span');
                 const input = td.querySelector('input');
 
-                if (["id", "created_at", "updated_at"].includes(key)) return;
+                if (["id", "created_at", "updated_at", "professor", "subject"].includes(key)) return;
 
                 input.classList.remove('hidden');
                 span.classList.add('hidden');
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const key = td.dataset.key;
                 const input = td.querySelector('input');
 
-                if (!input || ["id", "created_at", "updated_at"].includes(key)) return;
+                if (!input || ["id", "created_at", "updated_at", "professor", "subject"].includes(key)) return;
 
                 data[key] = input.value;
             });
@@ -135,7 +135,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         const input = td.querySelector('input');
                         const span = td.querySelector('span');
 
-                        if (!input || ["id", "created_at", "updated_at"].includes(key)) return;
+                        if (!input || ["id", "created_at", "updated_at", "preview"].includes(key)) return;
+
 
                         span.textContent = input.value;
                         input.classList.add('hidden');
@@ -197,7 +198,49 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+function processRequestAndRemoveRow(button, id, action) {
+    fetch('/gestionar-solicitud-maestro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const row = button.closest('tr');
+        if (row) row.remove();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(err => {
+      console.error('Error processing request:', err);
+      alert('Error al procesar solicitud');
+    });
+  }
+  
     
+  async function resolverReporte(reportId, commentId) {
+    if (!confirm("¿Estás seguro de que deseas resolver este reporte y eliminar el comentario?")) return;
+
+    try {
+        const response = await fetch('/resolverReporte', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reportId, commentId })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Reporte resuelto y comentario eliminado.');
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error al resolver el reporte:', error);
+    }
+}
 
 
 

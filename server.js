@@ -106,9 +106,9 @@ app.post('/gestionar-solicitud-maestro', async (req, res) => {
         `INSERT INTO professors (first_name, last_name, created_at) VALUES ($1, $2, NOW())`,
         [solicitud.rows[0].first_name, solicitud.rows[0].last_name]
       );
-      await pool.query(`UPDATE professors_requests SET status_id = 2 WHERE id = $1`, [id]);
+      await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
     } else if (action === 'reject') {
-      await pool.query(`UPDATE professors_requests SET status_id = 3 WHERE id = $1`, [id]);
+      await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
     }
 
     res.json({ success: true, message: 'Solicitud procesada correctamente.' });
@@ -223,7 +223,6 @@ app.post('/deleteCrud', async (req, res) => {
     'comments': 'id',
     'professors': 'id',
     'reports': 'id',
-    'report_status': 'id',
     'report_reasons': 'id',
     'subjects': 'id',
     'professors_requests': 'id'
@@ -306,6 +305,29 @@ app.get('/profileData', (req, res) => {
   }
   res.json({ username: req.session.usuario.username });
 });
+
+app.post('/resolverReporte', async (req, res) => {
+  const { reportId, commentId } = req.body;
+
+  if (!reportId || !commentId) {
+      return res.status(400).json({ success: false, message: "Datos incompletos." });
+  }
+
+  try {
+      // Cambiar el estado del reporte
+      await pool.query('UPDATE reports SET status_id = 4 WHERE id = $1', [reportId]);
+
+      // Eliminar el comentario asociado
+      await pool.query('DELETE FROM comments WHERE id = $1', [commentId]);
+
+      res.json({ success: true });
+  } catch (error) {
+      console.error("Error al resolver reporte:", error);
+      res.status(500).json({ success: false, message: "Error interno del servidor." });
+  }
+});
+
+
 
 app.post('/newReport', async (req, res) => {
   if (!req.session.usuario || req.session.usuario.id === 0) {
@@ -500,7 +522,12 @@ app.get('/dashboard', async (req, res) => {
   }
 
   try {
-    const result = await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename ASC");
+    const result = await pool.query(`
+      SELECT tablename FROM pg_tables 
+      WHERE schemaname='public' 
+      AND tablename NOT IN ('report_status', 'roles', 'comment_likes', 'professor_likes')
+      ORDER BY tablename ASC
+    `);
     const tables = result.rows.map(row => row.tablename);
 
     const datosDashboard = await obtenerDatosDashboard();
@@ -526,6 +553,31 @@ app.get('/dashboard/:tableName', async (req, res) => {
       return res.status(404).send("Tabla no encontrada");
     }
 
+    let result;
+
+    if (tableName === "professor_subjects") {
+      result = await pool.query(`
+        SELECT 
+          ps.id,
+          ps.professor_id,
+          ps.subject_id,
+          CONCAT(p.first_name, ' ', p.last_name) AS professor,
+          s.name AS subject
+        FROM professor_subjects ps
+        JOIN professors p ON ps.professor_id = p.id
+        JOIN subjects s ON ps.subject_id = s.id
+        ORDER BY ps.id ASC
+      `);
+
+      return res.render('crud_table', {
+        usuario: req.session.usuario,
+        tableName,
+        tables,
+        data: result.rows,
+        comentariosMap: null
+      });
+    }
+
     const columnResult = await pool.query(`
       SELECT column_name
       FROM information_schema.columns
@@ -540,15 +592,73 @@ app.get('/dashboard/:tableName', async (req, res) => {
 
     const firstColumn = columnResult.rows[0].column_name;
 
-    const result = await pool.query(`SELECT * FROM ${tableName} ORDER BY ${firstColumn} ASC`);
-    const data = result.rows;
+    if (tableName === "comments") {
+      result = await pool.query(`
+        SELECT 
+          c.id,
+          c.user_id,
+          c.professor_id,
+          c.subject_id,
+          LEFT(c.content, 40) || '...' AS preview,
+          c.created_at,
+          c.content
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        JOIN professors p ON c.professor_id = p.id
+        JOIN subjects s ON c.subject_id = s.id
+        ORDER BY c.id ASC
+      `);
+    } else if (tableName === "reports") {
+      result = await pool.query(`
+        SELECT 
+          r.id,
+          r.comment_id,
+          u.username AS user,
+          LEFT(c.content, 40) || '...' AS comment,
+          rr.reason_name AS reason,
+          r.status_id,
+          r.created_at,
+          c.content AS __comment_full
+        FROM reports r
+        JOIN users u ON r.user_id = u.id
+        JOIN comments c ON r.comment_id = c.id
+        JOIN report_reasons rr ON r.reason_id = rr.id
+        ORDER BY r.id ASC
+      `);
+    } else {
+      result = await pool.query(`SELECT * FROM ${tableName} ORDER BY ${firstColumn} ASC`);
+    }
 
-    res.render('crud_table', { usuario: req.session.usuario, tableName, tables, data });
+    const data = result.rows;
+    const comentariosMap = {};
+
+    if (tableName === "reports") {
+      data.forEach(row => {
+        comentariosMap[row.id] = row.__comment_full;
+        delete row.__comment_full;
+      });
+    } else if (tableName === "comments") {
+      data.forEach(row => {
+        comentariosMap[row.id] = row.content;
+        delete row.content; // elimina el comentario completo del objeto de datos
+      });
+    }
+
+    res.render('crud_table', {
+      usuario: req.session.usuario,
+      tableName,
+      tables,
+      data,
+      comentariosMap: ["comments", "reports"].includes(tableName) ? comentariosMap : null
+    });
+
   } catch (error) {
     console.error(`Error obteniendo datos de ${tableName}:`, error);
     res.status(500).send("Error en el servidor");
   }
 });
+
+
 
 app.post('/dashboard/update', async (req, res) => {
   let { tableName, id, ...data } = req.body;
@@ -558,7 +668,7 @@ app.post('/dashboard/update', async (req, res) => {
     return res.status(400).json({ success: false, message: "Parámetros inválidos: tableName o ID incorrecto." });
   }
 
-  const tablasEditables = ["users", "professors", "subjects", "comments", "report_reasons"];
+  const tablasEditables = ["users", "professors", "subjects", "comments", "report_reasons", "professor_subjects"];
   if (!tablasEditables.includes(tableName)) {
     return res.status(400).json({ success: false, message: "No permitido modificar esta tabla." });
   }
