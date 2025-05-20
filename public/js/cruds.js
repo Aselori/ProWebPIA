@@ -243,6 +243,67 @@ function processRequestAndRemoveRow(button, id, action) {
 }
 
 
+function setupAutocomplete(inputSelector, endpoint) {
+  const input = document.querySelector(inputSelector);
+  const results = document.createElement("ul");
+  results.className = "autocomplete-list absolute bg-white border border-gray-300 mt-1 z-50 hidden";
+  input.parentNode.appendChild(results);
+
+  let selectedIndex = -1;
+
+  input.addEventListener("input", async () => {
+    const val = input.value.trim();
+    if (!val) return results.classList.add("hidden");
+
+    const res = await fetch(`${endpoint}?q=${encodeURIComponent(val)}`);
+    const options = await res.json();
+
+    results.innerHTML = '';
+    options.forEach((opt, i) => {
+      const item = document.createElement("li");
+      item.textContent = opt;
+      item.className = "px-4 py-2 hover:bg-gray-200 cursor-pointer";
+      item.addEventListener("click", () => {
+        input.value = opt;
+        results.classList.add("hidden");
+      });
+      results.appendChild(item);
+    });
+
+    selectedIndex = -1;
+    results.classList.remove("hidden");
+  });
+
+  input.addEventListener("keydown", e => {
+    const items = results.querySelectorAll("li");
+    if (!items.length) return;
+
+    if (e.key === "ArrowDown") {
+      selectedIndex = (selectedIndex + 1) % items.length;
+    } else if (e.key === "ArrowUp") {
+      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < items.length) {
+        input.value = items[selectedIndex].textContent;
+        results.classList.add("hidden");
+      }
+    }
+
+    items.forEach((item, idx) => {
+      item.classList.toggle("bg-blue-100", idx === selectedIndex);
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.location.href.includes("professor_subjects")) {
+    setupAutocomplete('input[name="professor_name"]', "/buscar");
+    setupAutocomplete('input[name="subject_name"]', "/buscar-materias");
+  }
+});
+
+
 
 
 

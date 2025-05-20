@@ -44,14 +44,18 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Debes iniciar sesión para enviar una solicitud.' });
   }
 
-  const { first_name, last_name } = req.body;
-  const userId = req.session.usuario.id; // Se mantiene la forma correcta de obtenerlo
+  const { first_name, last_name, subject_name } = req.body;
+  const userId = req.session.usuario.id;
+
+  if (!first_name || !last_name || !subject_name) {
+    return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
+  }
 
   try {
     const { rows } = await pool.query(
       `SELECT COUNT(*) AS total FROM professors_requests
-      WHERE user_id = $1 AND created_at::DATE = CURRENT_DATE`,
-      [userId] // Se usa `userId` correctamente
+       WHERE user_id = $1 AND created_at::DATE = CURRENT_DATE`,
+      [userId]
     );
 
     if (parseInt(rows[0].total, 10) >= 5) {
@@ -59,13 +63,12 @@ app.post('/nueva-solicitud-maestro', async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO professors_requests (first_name, last_name, user_id, status_id, created_at)
-      VALUES ($1, $2, $3, 1, NOW())`,
-      [first_name, last_name, userId] // Se usa `userId` correctamente
+      `INSERT INTO professors_requests (first_name, last_name, subject_name, user_id, status_id, created_at)
+       VALUES ($1, $2, $3, $4, 1, NOW())`,
+      [first_name, last_name, subject_name, userId]
     );
 
     res.json({ success: true, message: 'Solicitud enviada correctamente.' });
-
   } catch (error) {
     console.error('Error al enviar la solicitud:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor.' });
@@ -102,21 +105,48 @@ app.post('/gestionar-solicitud-maestro', async (req, res) => {
     }
 
     if (action === 'approve') {
-      await pool.query(
-        `INSERT INTO professors (first_name, last_name, created_at) VALUES ($1, $2, NOW())`,
-        [solicitud.rows[0].first_name, solicitud.rows[0].last_name]
-      );
-      await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
-    } else if (action === 'reject') {
-      await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
-    }
+      const { first_name, last_name, subject_name } = solicitud.rows[0];
 
-    res.json({ success: true, message: 'Solicitud procesada correctamente.' });
-  } catch (error) {
-    console.error('⚠️ Error al gestionar la solicitud:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor.' });
-  }
-});
+      const insertProfessor = await pool.query(
+        `INSERT INTO professors (first_name, last_name, created_at)
+        VALUES ($1, $2, NOW()) RETURNING id`,
+        [first_name, last_name]
+      );
+      const professorId = insertProfessor.rows[0].id;
+
+      // Verificar si la materia existe
+      const materiaResult = await pool.query(
+        `SELECT id FROM subjects WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+        [subject_name]
+      );
+
+      let subjectId;
+      if (materiaResult.rows.length > 0) {
+        subjectId = materiaResult.rows[0].id;
+      } else {
+        const newSubject = await pool.query(
+          `INSERT INTO subjects (name) VALUES ($1) RETURNING id`,
+          [subject_name]
+        );
+        subjectId = newSubject.rows[0].id;
+      }
+
+      await pool.query(
+        `INSERT INTO professor_subjects (professor_id, subject_id) VALUES ($1, $2)`,
+        [professorId, subjectId]
+      );
+
+      await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
+    }else if (action === 'reject') {
+          await pool.query(`DELETE FROM professors_requests WHERE id = $1`, [id]);
+        }
+
+        res.json({ success: true, message: 'Solicitud procesada correctamente.' });
+      } catch (error) {
+        console.error('⚠️ Error al gestionar la solicitud:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+      }
+    });
 
 function requireAdmin(req, res, next) {
   if (!req.session.usuario || req.session.usuario.role !== 1) {
@@ -190,6 +220,26 @@ app.get('/', async (req, res) => {
     res.status(500).send('Error interno del servidor');
   }
 });
+
+app.get('/buscar-materias', async (req, res) => {
+  const query = req.query.q?.toLowerCase() || '';
+  if (!query.length) return res.json([]);
+
+  try {
+    const result = await pool.query(`
+      SELECT name FROM subjects
+      WHERE LOWER(name) LIKE $1
+      ORDER BY name ASC
+      LIMIT 10
+    `, [`%${query}%`]);
+
+    res.json(result.rows.map(row => row.name));
+  } catch (e) {
+    console.error('Error en búsqueda de materias:', e);
+    res.status(500).json([]);
+  }
+});
+
 
 app.get('/buscar', async (req, res) => {
   const query = req.query.q?.toLowerCase() || '';
@@ -717,23 +767,60 @@ app.post('/dashboard/:tableName/add', async (req, res) => {
     roles: ["name"],
     professor_likes: ["professor_id", "user_id", "is_like"],
     comment_likes: ["comment_id", "user_id", "is_like"],
-    professor_subjects: ["professor_id", "subject_id"]
+    professor_subjects: ["professor_id", "subject_id"] // ← lógica especial para esta tabla
   };
 
-  if (!tableColumns[tableName]) return res.redirect(`/dashboard/${tableName}?message=Tabla no permitida`);
+  if (!tableColumns[tableName]) {
+    return res.redirect(`/dashboard/${tableName}?message=Tabla no permitida`);
+  }
 
   try {
+    if (tableName === "professor_subjects") {
+      // 🚩 Obtener los nombres enviados desde el formulario
+      const { professor_name, subject_name } = data;
+
+      // 🧠 Buscar ID del profesor por nombre completo
+      const profResult = await pool.query(`
+        SELECT id FROM professors
+        WHERE LOWER(CONCAT(first_name, ' ', last_name)) = LOWER($1)
+        LIMIT 1
+      `, [professor_name.trim()]);
+
+      // 🧠 Buscar ID de la materia por nombre
+      const subjResult = await pool.query(`
+        SELECT id FROM subjects
+        WHERE LOWER(name) = LOWER($1)
+        LIMIT 1
+      `, [subject_name.trim()]);
+
+      if (profResult.rowCount === 0 || subjResult.rowCount === 0) {
+        return res.redirect(`/dashboard/${tableName}?message=Nombre de profesor o materia no encontrado`);
+      }
+
+      const values = [profResult.rows[0].id, subjResult.rows[0].id];
+      await pool.query(`
+        INSERT INTO professor_subjects (professor_id, subject_id)
+        VALUES ($1, $2)
+      `, values);
+
+      return res.redirect(`/dashboard/${tableName}`);
+    }
     const columns = tableColumns[tableName];
     const values = columns.map(col => data[col]);
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
 
-    await pool.query(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *;`, values);
+    await pool.query(
+      `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *;`,
+      values
+    );
+
     res.redirect(`/dashboard/${tableName}`);
   } catch (error) {
     console.error(`Error al insertar en ${tableName}:`, error);
     res.redirect(`/dashboard/${tableName}?message=Error al agregar registro`);
   }
 });
+
 
 app.get('/comment-likes-status', async (req, res) => {
   console.log("Sesión al obtener likes de comentarios:", req.session);

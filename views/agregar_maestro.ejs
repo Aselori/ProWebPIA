@@ -22,11 +22,20 @@
                     <label for="last-name" class="block text-sm font-medium text-gray-700">Apellido</label>
                     <input type="text" name="last_name" id="last-name" class="mt-1 p-3 w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Apellido del maestro" required>
                 </div>
+                <div class="relative">
+                    <label for="subject-name" class="block text-sm font-medium text-gray-700">Materia</label>
+                    <input type="text" name="subject_name" id="subject-name"
+                        class="mt-1 p-3 w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Busca o escribe una materia" autocomplete="off" required>
+
+                    <ul id="subject-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto"></ul>
+                </div>
                 <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300">
                     Enviar Solicitud
                 </button>
             </form>
         </div>
+        
     <% } else { %>
         <p class="text-center text-gray-600 mt-4">Debes iniciar sesión para solicitar un nuevo maestro.</p>
     <% } %>

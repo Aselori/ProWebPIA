@@ -31,47 +31,70 @@
         <h1 class="text-2xl font-bold mb-4">Tabla: <%= tableName %></h1>
         <div class="mt-10">
             <form action="/dashboard/<%= tableName %>/add" method="POST" class="mb-4">
-                <% const fieldConfigs = {
-                    users: [
-                        { type: "text", name: "username", placeholder: "Nombre de usuario" },
-                        { type: "email", name: "email", placeholder: "Correo electrónico" },
-                        { type: "password", name: "password", placeholder: "Contraseña" },
-                        { type: "number", name: "role_id", placeholder: "Rol (ej. 2 para usuario)" }
-                    ],
-                    professors: [
-                        { type: "text", name: "first_name", placeholder: "Nombre" },
-                        { type: "text", name: "last_name", placeholder: "Apellido" }
-                    ],
-                    subjects: [
-                        { type: "text", name: "name", placeholder: "Nombre de la materia" }
-                    ],
-                    professor_subjects: [
-                        { type: "number", name: "professor_id", placeholder: "ID del Profesor" },
-                        { type: "number", name: "subject_id", placeholder: "ID de la Materia" }
-                    ],
-                    report_reasons: [
-                        { type: "text", name: "reason_name", placeholder: "Descripción del motivo" }
-                    ]
-                }[tableName]; %>
-            
-                <% if (fieldConfigs) { %>
-                    <% fieldConfigs.forEach(field => { %>
-                        <input class="p-4" type="<%= field.type %>" name="<%= field.name %>" placeholder="<%= field.placeholder %>" required>
-                    <% }) %>
-                <% } %>
+              <% const fieldConfigs = {
+                users: [
+                  { type: "text", name: "username", placeholder: "Nombre de usuario" },
+                  { type: "email", name: "email", placeholder: "Correo electrónico" },
+                  { type: "password", name: "password", placeholder: "Contraseña" },
+                  { type: "number", name: "role_id", placeholder: "Rol (ej. 2 para usuario)" }
+                ],
+                professors: [
+                  { type: "text", name: "first_name", placeholder: "Nombre" },
+                  { type: "text", name: "last_name", placeholder: "Apellido" }
+                ],
+                subjects: [
+                  { type: "text", name: "name", placeholder: "Nombre de la materia" }
+                ],
+                professor_subjects: [
+                  { type: "text", name: "professor_name", placeholder: "Nombre del Profesor", autocomplete: "off", autocorrect: "off" },
+                  { type: "text", name: "subject_name", placeholder: "Nombre de la Materia", autocomplete: "off", autocorrect: "off" }
+                ],
+                report_reasons: [
+                  { type: "text", name: "reason_name", placeholder: "Descripción del motivo" }
+                ]
+              }[tableName]; %>
 
-                <% if (["users", "professors", "subjects", "professor_subjects", "report_reasons"].includes(tableName)) { %>
-                <button type="submit" class="bg-green-500 text-white p-4 rounded">Agregar</button>
-                <% } %>
+              <% if (fieldConfigs) { %>
+                <div class="flex gap-4 mb-4 items-end">
+                  <% fieldConfigs.forEach(field => { %>
+                    <div class="relative">
+                      <input
+                        class="p-4 border border-gray-300 rounded"
+                        type="<%= field.type %>"
+                        name="<%= field.name %>"
+                        placeholder="<%= field.placeholder %>"
+                        required
+                        <% if (field.autocomplete) { %> autocomplete="<%= field.autocomplete %>" <% } %>
+                        <% if (field.autocorrect) { %> autocorrect="<%= field.autocorrect %>" <% } %>
+                        spellcheck="false"
+                        <% if (field.name === 'professor_name' || field.name === 'subject_name') { %>
+                          readonly onfocus="this.removeAttribute('readonly')"
+                        <% } %>
+                      >
+                      <% if (field.name === 'professor_name' || field.name === 'subject_name') { %>
+                        <ul class="autocomplete-list hidden absolute top-full left-0 bg-white border border-gray-300 mt-1 z-50 rounded shadow w-full"></ul>
+                      <% } %>
+                    </div>
+                  <% }) %>
+
+                  <% if (["users", "professors", "subjects", "professor_subjects", "report_reasons"].includes(tableName)) { %>
+                    <button type="submit" class="bg-green-500 text-white p-4 rounded">
+                      Agregar
+                    </button>
+                  <% } %>
+                </div>
+              <% } %>
             </form>
+            <div id="autocomplete-results" class="bg-white border border-gray-300 rounded mt-1 hidden absolute z-10"></div>
+
         </div>
         <table class="min-w-full bg-gray-100 border border-gray-300">
             <thead>
                 <tr>
                     <% if (data.length > 0) { %>
-                        <% Object.keys(data[0]).forEach(key => { %>
+                        <% Object.keys(data[0]).forEach(key => { if (!key.endsWith('_id') && key !== 'id') { %>
                             <th class="py-2 px-4 border-b"><%= key %></th>
-                        <% }) %>
+                        <% }}); %>
                         <th class="py-2 px-4 border-b">Acciones</th>
                     <% } else { %>
                         <th class="py-2 px-4 border-b">No hay datos disponibles</th>
@@ -81,8 +104,9 @@
             <tbody>
                 <% data.forEach((row, index) => { %>
                     <tr class="<%= index % 2 === 0 ? 'bg-white' : 'bg-gray-100' %>">
-                        <% Object.entries(row).forEach(([key, value]) => { %>
-                            <% if (key === 'content_full') return; %> <!-- No mostrar el comentario completo -->
+                        <% Object.entries(row).forEach(([key, value]) => {
+                            if (key === 'content_full' || key === 'id' || key.endsWith('_id')) return;
+                        %>
                             <td class="py-2 text-center px-4 border-b" data-key="<%= key %>">
                               <% if (key === 'created_at') { %>
                                 <span><%= new Date(value).toLocaleString('es-MX', {
